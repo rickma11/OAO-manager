@@ -502,6 +502,15 @@
             return div.innerHTML;
         }
 
+        function copyEvolutionName(name) {
+            navigator.clipboard.writeText(name).then(() => {
+                showMessage('复制成功！', 'success');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                showMessage('复制失败，请手动复制', 'error');
+            });
+        }
+
         async function addEvolution() {
             const token = document.getElementById('giteeToken').value.trim();
             const enName = document.getElementById('enName').value.trim();
@@ -657,7 +666,10 @@
                                 <span class="arrow">→</span>
                                 <span class="evolution-zh">${escapeHtml(evo.scraped_date)}</span>
                             </div>
-                            <a href="${evo.url}" target="_blank" class="btn btn-primary" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">查看</a>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" style="width: auto; padding: 6px 12px; font-size: 0.85rem; background: #4CAF50;" onclick="copyEvolutionName('${escapeHtml(evo.content)}')">复制</button>
+                                <a href="${evo.url}" target="_blank" class="btn btn-primary" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">查看</a>
+                            </div>
                         </div>
                     `).join('');
                 }
