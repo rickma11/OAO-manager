@@ -1,1 +1,133 @@
-{"history": [], "logs": []}
+{
+  "history": [
+    {
+      "name": "Winger Transformation",
+      "url": "https://www.futbin.com/evolutions/614/winger-transformation",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Starter",
+      "url": "https://www.futbin.com/evolutions/615/make-your-idol-starter",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Attacker 1",
+      "url": "https://www.futbin.com/evolutions/616/make-your-idol-attacker-1",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Tiki Taka+",
+      "url": "https://www.futbin.com/evolutions/617/make-your-idol-tiki-taka",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Incisive Pass+",
+      "url": "https://www.futbin.com/evolutions/618/make-your-idol-incisive-pass",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Midfielder 1",
+      "url": "https://www.futbin.com/evolutions/619/make-your-idol-midfielder-1",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Low Driven+",
+      "url": "https://www.futbin.com/evolutions/620/make-your-idol-low-driven",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Technical+",
+      "url": "https://www.futbin.com/evolutions/621/make-your-idol-technical",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Jockey+",
+      "url": "https://www.futbin.com/evolutions/622/make-your-idol-jockey",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Intercept+",
+      "url": "https://www.futbin.com/evolutions/623/make-your-idol-intercept",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Defender 1",
+      "url": "https://www.futbin.com/evolutions/624/make-your-idol-defender-1",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Attacker 2",
+      "url": "https://www.futbin.com/evolutions/625/make-your-idol-attacker-2",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Midfielder 2",
+      "url": "https://www.futbin.com/evolutions/626/make-your-idol-midfielder-2",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Defender 2",
+      "url": "https://www.futbin.com/evolutions/627/make-your-idol-defender-2",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Attacker 3",
+      "url": "https://www.futbin.com/evolutions/628/make-your-idol-attacker-3",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Midfielder 3",
+      "url": "https://www.futbin.com/evolutions/629/make-your-idol-midfielder-3",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    },
+    {
+      "name": "Make Your Idol - Defender 3",
+      "url": "https://www.futbin.com/evolutions/630/make-your-idol-defender-3",
+      "date": "2026/3/12",
+      "time": "22:21:34",
+      "timestamp": 1773325294738
+    }
+  ],
+  "logs": [
+    {
+      "type": "系统",
+      "message": "正在同步数据到GitHub...",
+      "time": "23:55:12",
+      "date": "2026/3/12",
+      "timestamp": 1773330912580
+    }
+  ],
+  "lastUpdated": "2026-03-12T15:55:13.514Z"
+}
