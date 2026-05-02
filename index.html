@@ -294,72 +294,7 @@
             </div>
         </div>
 
-        <!-- FUTBIN进化监控 -->
-        <div class="card">
-            <h2 class="section-title">⚡ FUTBIN进化监控</h2>
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- 状态卡片 -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef;">
-                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">上次检查</div>
-                        <div style="font-size: 1.2rem; font-weight: 600; color: #333;" id="evo-last-check">--</div>
-                    </div>
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef;">
-                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">下次检查</div>
-                        <div style="font-size: 1.2rem; font-weight: 600; color: #333;" id="evo-next-check">次日 02:30</div>
-                    </div>
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef;">
-                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">今日发现</div>
-                        <div style="font-size: 1.2rem; font-weight: 600; color: #333;" id="evo-today-count">0</div>
-                    </div>
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef;">
-                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">历史总数</div>
-                        <div style="font-size: 1.2rem; font-weight: 600; color: #333;" id="evo-total-count">0</div>
-                    </div>
-                </div>
-
-                <!-- 控制按钮 -->
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 10px; height: 10px; border-radius: 50%; background: #28a745; box-shadow: 0 0 8px #28a745; animation: blink 1.5s infinite;" id="evo-status-dot"></div>
-                        <span id="evo-status-text">运行中</span>
-                    </div>
-                    <button class="btn btn-primary" id="evo-check-now-btn" onclick="evoCheckEvolutions()">
-                        <span>🔄 立即检查</span>
-                    </button>
-                </div>
-
-                <!-- 最新发现 -->
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="color: #333; font-size: 1.1rem;">📅 今日最新发现</h3>
-                        <button class="btn btn-secondary" onclick="evoClearToday()">
-                            <span>清空今日</span>
-                        </button>
-                    </div>
-                    <div id="evo-new-list" style="background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef; max-height: 400px; overflow-y: auto;">
-                        <div style="text-align: center; color: #999; padding: 32px 0;">
-                            <p>暂无新进化</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 运行日志 -->
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="color: #333; font-size: 1.1rem;">📋 运行日志</h3>
-                        <button class="btn btn-secondary" onclick="evoClearLogs()">
-                            <span>清空日志</span>
-                        </button>
-                    </div>
-                    <div id="evo-log-container" style="background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef; font-family: monospace; font-size: 0.9rem; max-height: 200px; overflow-y: auto;">
-                        <div style="color: #666;">[系统] 监控服务已启动</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="message" class="message"></div>
+ 
 
         <!-- 字典管理卡片 -->
         <div class="card" id="dictionaryCard" style="display: none;">
