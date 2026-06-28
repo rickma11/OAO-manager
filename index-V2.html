@@ -224,12 +224,82 @@
         input:checked + .toggle-slider { background-color: #28a745; }
         input:checked + .toggle-slider:before { transform: translateX(24px); }
         
+        /* 进化监控样式 */
+        .evo-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .evo-card:hover { background: #e9ecef; border-color: #dee2e6; }
+        .evo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .evo-name {
+            font-weight: 600; color: #333;
+        }
+        .evo-time {
+            font-size: 0.85rem; color: #666;
+        }
+        .evo-actions {
+            display: flex; gap: 8px;
+        }
+        .new-tag {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        
+        /* 模块切换页签样式 */
+        .module-tab {
+            flex: 1;
+            padding: 16px 24px;
+            cursor: pointer;
+            border: none;
+            background: #f8f9fa;
+            color: #666;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        .module-tab:hover {
+            background: #e9ecef;
+            color: #667eea;
+        }
+        .module-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+            box-shadow: inset 0 -3px 0 #667eea;
+        }
+        .module-tab:first-child {
+            border-radius: 16px 0 0 0;
+        }
+        .module-tab:last-child {
+            border-radius: 0 16px 0 0;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .tabs { overflow-x: auto; flex-wrap: nowrap; }
             .tab { white-space: nowrap; }
             .dictionary-item { flex-direction: column; align-items: flex-start; gap: 10px; }
             .actions { width: 100%; justify-content: flex-end; }
+            .module-tab { padding: 12px 16px; font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -251,6 +321,18 @@
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="loadAllData()">
                     <span>📥 加载所有数据</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 模块切换页签 -->
+        <div class="card" style="padding: 0; margin-bottom: 20px;">
+            <div class="module-tabs" style="display: flex; gap: 0;">
+                <button class="module-tab active" id="moduleTabEvo" onclick="switchModule('evolution')">
+                    <span>🧬 进化管理</span>
+                </button>
+                <button class="module-tab" id="moduleTabDict" onclick="switchModule('dictionary')">
+                    <span>📚 内置字典</span>
                 </button>
             </div>
         </div>
@@ -287,7 +369,7 @@
                 <button class="tab" data-category="playstyles" onclick="switchTab('playstyles')">特技</button>
                 <button class="tab" data-category="futgg" onclick="switchTab('futgg')">FUTGG</button>
                 <button class="tab" data-category="futbin" onclick="switchTab('futbin')">FUTBIN</button>
-                <button class="tab" data-category="evolutions" onclick="switchTab('evolutions')">进化</button>
+                <button class="tab" data-category="easysbc" onclick="switchTab('easysbc')">EASYSBC</button>
             </div>
 
             <!-- 添加表单 -->
@@ -319,7 +401,7 @@
                             <option value="playstyles">特技</option>
                             <option value="futgg">FUTGG</option>
                             <option value="futbin">FUTBIN</option>
-                            <option value="evolutions">进化</option>
+                            <option value="easysbc">EASYSBC</option>
                         </select>
                     </div>
                 </div>
@@ -332,6 +414,69 @@
 
             <!-- 字典列表 -->
             <div id="dictionaryList" class="dictionary-list"></div>
+        </div>
+
+        <!-- 进化管理卡片 -->
+        <div class="card" id="evolutionCard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 class="section-title" style="margin: 0; border: none; padding: 0;">🧬 进化管理</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="auto-save-toggle" style="margin: 0;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoSaveEvo" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>自动保存</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveEvolutions()">
+                        <span>💾 手动保存</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 进化统计 -->
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="evoTotalCount">0</div>
+                    <div class="stat-label">进化总数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="evoWithSourceCount">0</div>
+                    <div class="stat-label">有来源</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="evoNoSourceCount">0</div>
+                    <div class="stat-label">无来源</div>
+                </div>
+            </div>
+
+            <!-- 进化添加表单 -->
+            <div class="add-form">
+                <h3 style="margin-bottom: 16px; color: #333;">➕ 添加新进化</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>英文名称 (Key)</label>
+                        <input type="text" id="newEvoKey" placeholder="例如：PhD In Dribbling">
+                    </div>
+                    <div class="form-group">
+                        <label>中文翻译</label>
+                        <input type="text" id="newEvoCN" placeholder="例如：盘带博士">
+                    </div>
+                    <div class="form-group">
+                        <label>来源 (可选)</label>
+                        <input type="text" id="newEvoSource" placeholder="例如：日本任务">
+                    </div>
+                    <button class="btn btn-success" onclick="addEvolution()">添加</button>
+                </div>
+            </div>
+
+            <!-- 进化搜索框 -->
+            <div class="search-box">
+                <input type="text" id="evoSearchInput" placeholder="🔍 搜索进化名称或翻译..." oninput="filterEvolutions()">
+            </div>
+
+            <!-- 进化列表 -->
+            <div id="evolutionList" class="dictionary-list"></div>
         </div>
 
 
@@ -350,6 +495,7 @@
         let dictSha = '';
         let evoSha = '';
         let currentCategory = 'basic';
+        let currentModule = 'evolution'; // 当前模块：evolution 或 dictionary
 
         const categoryNames = {
             basic: '基础信息',
@@ -359,8 +505,22 @@
             playstyles: '特技',
             futgg: 'FUTGG',
             futbin: 'FUTBIN',
+            easysbc: 'EASYSBC',
             evolutions: '进化'
         };
+
+        // 切换模块
+        function switchModule(module) {
+            currentModule = module;
+            
+            // 更新页签样式
+            document.getElementById('moduleTabEvo').classList.toggle('active', module === 'evolution');
+            document.getElementById('moduleTabDict').classList.toggle('active', module === 'dictionary');
+            
+            // 切换卡片显示
+            document.getElementById('evolutionCard').style.display = module === 'evolution' ? 'block' : 'none';
+            document.getElementById('dictionaryCard').style.display = module === 'dictionary' ? 'block' : 'none';
+        }
 
         function showMessage(text, type = 'info') {
             const msg = document.getElementById('message');
@@ -462,9 +622,12 @@
                     }
                 });
                 
-                document.getElementById('dictionaryCard').style.display = 'block';
+                // 默认显示进化管理模块
+                switchModule('evolution');
                 updateStats();
+                updateEvoStats();
                 renderDictionaryList();
+                renderEvolutionList();
                 showMessage('✅ 所有数据加载成功！', 'success');
             } catch (error) {
                 console.error('加载错误:', error);
@@ -528,7 +691,7 @@
 
         // 自动保存进化
         async function autoSaveEvolutions() {
-            if (!document.getElementById('autoSave').checked) return;
+            if (!document.getElementById('autoSaveEvo').checked) return;
             await saveEvolutions();
         }
 
@@ -538,12 +701,8 @@
             container.innerHTML = '';
             
             Object.keys(categoryNames).forEach(category => {
-                let count = 0;
-                if (category === 'evolutions') {
-                    count = Object.keys(currentEvolutions).length;
-                } else {
-                    count = Object.keys(currentDictionaries[category] || {}).length;
-                }
+                if (category === 'evolutions') return; // 进化有独立统计
+                let count = Object.keys(currentDictionaries[category] || {}).length;
                 
                 const item = document.createElement('div');
                 item.className = 'stat-item';
@@ -552,16 +711,148 @@
             });
         }
 
+        // 更新进化统计
+        function updateEvoStats() {
+            const total = Object.keys(currentEvolutions).length;
+            const withSource = Object.entries(currentEvolutions).filter(([k, v]) => v.source && v.source.trim()).length;
+            const noSource = total - withSource;
+            
+            document.getElementById('evoTotalCount').textContent = total;
+            document.getElementById('evoWithSourceCount').textContent = withSource;
+            document.getElementById('evoNoSourceCount').textContent = noSource;
+        }
 
-
-        // 切换标签
-        function switchTab(category) {
-            currentCategory = category;
-            document.querySelectorAll('#categoryTabs .tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.category === category);
+        // 渲染进化列表
+        function renderEvolutionList() {
+            const list = document.getElementById('evolutionList');
+            const search = document.getElementById('evoSearchInput').value.toLowerCase();
+            
+            let entries = Object.entries(currentEvolutions).filter(([k, v]) => {
+                const cn = typeof v === 'object' && v.CN ? v.CN : v;
+                const source = typeof v === 'object' && v.source ? v.source : '';
+                const text = `${k} ${cn} ${source}`.toLowerCase();
+                return text.includes(search);
             });
-            document.getElementById('newCategory').value = category;
-            renderDictionaryList();
+
+            // 按添加时间排序（新到旧）
+            entries.sort((a, b) => {
+                const timeA = (typeof a[1] === 'object' && a[1].timestamp) || 0;
+                const timeB = (typeof b[1] === 'object' && b[1].timestamp) || 0;
+                return timeB - timeA;
+            });
+
+            if (entries.length === 0) {
+                list.innerHTML = `<div class="empty-state"><p>${search ? '没有找到匹配的进化' : '暂无进化数据'}</p></div>`;
+                return;
+            }
+
+            list.innerHTML = entries.map(([key, value]) => {
+                const cn = typeof value === 'object' && value.CN ? value.CN : value;
+                const source = typeof value === 'object' && value.source ? value.source : '';
+                
+                return `
+                <div class="dictionary-item" data-key="${key}">
+                    <div class="dictionary-info">
+                        <span class="dictionary-key">${key}</span>
+                        <span class="arrow" style="margin: 0 12px; color: #667eea; font-size: 1.1em; font-weight: 500;">→</span>
+                        <span class="dictionary-value">${cn}</span>
+                        ${source ? `<span class="dictionary-shorten" style="background: #fff3cd; color: #856404;">【${source}】</span>` : ''}
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="editEvolutionEntry('${key}')">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteEvolutionEntry('${key}')">删除</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // 过滤进化列表
+        function filterEvolutions() {
+            renderEvolutionList();
+        }
+
+        // 添加进化
+        async function addEvolution() {
+            const key = document.getElementById('newEvoKey').value.trim();
+            const cn = document.getElementById('newEvoCN').value.trim();
+            const source = document.getElementById('newEvoSource').value.trim();
+            
+            if (!key || !cn) {
+                showMessage('请输入英文名称和中文翻译', 'error');
+                return;
+            }
+            
+            currentEvolutions[key] = {
+                CN: cn,
+                timestamp: Date.now(),
+                ...(source && { source })
+            };
+            
+            await autoSaveEvolutions();
+            
+            // 清空表单
+            document.getElementById('newEvoKey').value = '';
+            document.getElementById('newEvoCN').value = '';
+            document.getElementById('newEvoSource').value = '';
+            
+            updateEvoStats();
+            renderEvolutionList();
+            showMessage('✅ 进化添加成功！', 'success');
+        }
+
+        // 编辑进化
+        function editEvolutionEntry(key) {
+            const item = document.querySelector(`#evolutionList .dictionary-item[data-key="${key}"]`);
+            const value = currentEvolutions[key];
+            
+            const cn = typeof value === 'object' && value.CN ? value.CN : value;
+            const source = typeof value === 'object' && value.source ? value.source : '';
+            
+            item.innerHTML = `
+                <div class="edit-form" style="width: 100%; flex-wrap: wrap;">
+                    <input type="text" value="${key}" id="edit-evo-key-${key}" style="flex: 1; min-width: 150px;" readonly>
+                    <input type="text" value="${cn}" id="edit-evo-cn-${key}" style="flex: 2; min-width: 150px;" placeholder="中文翻译">
+                    <input type="text" value="${source}" id="edit-evo-source-${key}" style="flex: 1; min-width: 100px;" placeholder="来源">
+                    <button class="btn btn-success" onclick="saveEditEvolutionEntry('${key}')">保存</button>
+                    <button class="btn btn-secondary" onclick="renderEvolutionList()">取消</button>
+                </div>
+            `;
+        }
+
+        // 保存编辑进化
+        async function saveEditEvolutionEntry(oldKey) {
+            const cn = document.getElementById(`edit-evo-cn-${oldKey}`).value.trim();
+            const source = document.getElementById(`edit-evo-source-${oldKey}`).value.trim();
+            
+            if (!cn) {
+                showMessage('请输入中文翻译', 'error');
+                return;
+            }
+            
+            currentEvolutions[oldKey] = {
+                CN: cn,
+                timestamp: Date.now(),
+                ...(source && { source })
+            };
+            
+            await autoSaveEvolutions();
+            
+            renderEvolutionList();
+            updateEvoStats();
+            showMessage('✅ 进化修改成功！', 'success');
+        }
+
+        // 删除进化
+        async function deleteEvolutionEntry(key) {
+            if (!confirm(`确定要删除进化 "${key}" 吗？`)) return;
+            
+            delete currentEvolutions[key];
+            await autoSaveEvolutions();
+            
+            renderEvolutionList();
+            updateEvoStats();
+            showMessage('✅ 进化删除成功！', 'success');
         }
 
         // 渲染字典列表
@@ -569,27 +860,13 @@
             const list = document.getElementById('dictionaryList');
             const search = document.getElementById('searchInput').value.toLowerCase();
             
-            let entries = [];
-            let dictionary = {};
-            
-            // 处理进化分类
-            if (currentCategory === 'evolutions') {
-                dictionary = currentEvolutions;
-                entries = Object.entries(currentEvolutions).filter(([k, v]) => {
-                    // 进化数据使用 CN 键
-                    const translation = typeof v === 'object' && v.CN ? v.CN : v;
-                    const text = `${k} ${translation}`.toLowerCase();
-                    return text.includes(search);
-                });
-            } else {
-                // 处理其他分类
-                dictionary = currentDictionaries[currentCategory] || {};
-                entries = Object.entries(dictionary).filter(([k, v]) => {
-                    const translation = typeof v === 'object' && v.webpagedata ? v.webpagedata : v;
-                    const text = `${k} ${translation} ${(typeof v === 'object' && v.shorten) || ''}`.toLowerCase();
-                    return text.includes(search);
-                });
-            }
+            // 处理字典分类
+            const dictionary = currentDictionaries[currentCategory] || {};
+            const entries = Object.entries(dictionary).filter(([k, v]) => {
+                const translation = typeof v === 'object' && v.webpagedata ? v.webpagedata : v;
+                const text = `${k} ${translation} ${(typeof v === 'object' && v.shorten) || ''}`.toLowerCase();
+                return text.includes(search);
+            });
 
             // 按添加时间排序（新到旧）
             entries.sort((a, b) => {
@@ -604,16 +881,8 @@
             }
 
             list.innerHTML = entries.map(([key, value]) => {
-                // 确保正确处理值
-                let translation, shorten;
-                if (currentCategory === 'evolutions') {
-                    // 进化数据使用 CN 键
-                    translation = typeof value === 'object' && value.CN ? value.CN : value;
-                    shorten = ''; // 进化数据没有 shorten
-                } else {
-                    translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
-                    shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
-                }
+                const translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
+                const shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
                 
                 return `
                 <div class="dictionary-item" data-key="${key}">
@@ -624,8 +893,8 @@
                         ${shorten ? `<span class="dictionary-shorten">[${shorten}]</span>` : ''}
                     </div>
                     <div class="actions">
-                        <button class="btn btn-secondary" onclick="${currentCategory === 'evolutions' ? 'editEvolution' : 'editEntry'}('${key}')">编辑</button>
-                        <button class="btn btn-danger" onclick="${currentCategory === 'evolutions' ? 'deleteEvolution' : 'deleteEntry'}('${key}')">删除</button>
+                        <button class="btn btn-secondary" onclick="editEntry('${key}')">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteEntry('${key}')">删除</button>
                     </div>
                 </div>
                 `;
@@ -648,26 +917,15 @@
             
             const timestamp = Date.now(); // 添加时间戳
             
-            if (category === 'evolutions') {
-                // 添加到进化数据 - 使用 CN 键
-                currentEvolutions[key] = {
-                    CN: value,
-                    timestamp: timestamp
-                };
-                
-                // 自动保存进化
-                await autoSaveEvolutions();
-            } else {
-                // 添加到字典数据
-                currentDictionaries[category][key] = {
-                    webpagedata: value,
-                    ...(shorten && { shorten }),
-                    timestamp: timestamp
-                };
-                
-                // 自动保存字典
-                await autoSaveDictionaries();
-            }
+            // 添加到字典数据
+            currentDictionaries[category][key] = {
+                webpagedata: value,
+                ...(shorten && { shorten }),
+                timestamp: timestamp
+            };
+            
+            // 自动保存字典
+            await autoSaveDictionaries();
             
             // 清空表单
             document.getElementById('newKey').value = '';
@@ -684,24 +942,10 @@
         // 编辑条目
         function editEntry(key) {
             const item = document.querySelector(`#dictionaryList .dictionary-item[data-key="${key}"]`);
-            let value;
+            const value = currentDictionaries[currentCategory][key];
             
-            if (currentCategory === 'evolutions') {
-                value = currentEvolutions[key];
-            } else {
-                value = currentDictionaries[currentCategory][key];
-            }
-            
-            // 确保正确处理值
-            let translation, shorten;
-            if (currentCategory === 'evolutions') {
-                // 进化数据使用 CN 键
-                translation = typeof value === 'object' && value.CN ? value.CN : value;
-                shorten = ''; // 进化数据没有 shorten
-            } else {
-                translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
-                shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
-            }
+            const translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
+            const shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
             
             item.innerHTML = `
                 <div class="edit-form" style="width: 100%;">
@@ -712,11 +956,6 @@
                     <button class="btn btn-secondary" onclick="renderDictionaryList()">取消</button>
                 </div>
             `;
-        }
-
-        // 编辑进化（保持兼容性）
-        function editEvolution(key) {
-            editEntry(key);
         }
 
         // 保存编辑
@@ -731,61 +970,33 @@
             
             const timestamp = Date.now(); // 更新时间戳
             
-            if (currentCategory === 'evolutions') {
-                // 编辑进化数据 - 使用 CN 键
-                currentEvolutions[oldKey] = {
-                    CN: value,
-                    timestamp: timestamp
-                };
-                
-                // 自动保存进化
-                await autoSaveEvolutions();
-            } else {
-                // 编辑字典数据
-                currentDictionaries[currentCategory][oldKey] = {
-                    webpagedata: value,
-                    ...(shorten && { shorten }),
-                    timestamp: timestamp
-                };
-                
-                // 自动保存字典
-                await autoSaveDictionaries();
-            }
+            // 编辑字典数据
+            currentDictionaries[currentCategory][oldKey] = {
+                webpagedata: value,
+                ...(shorten && { shorten }),
+                timestamp: timestamp
+            };
+            
+            // 自动保存字典
+            await autoSaveDictionaries();
             
             renderDictionaryList();
             updateStats();
             showMessage('✅ 修改成功！', 'success');
         }
 
-        // 保存编辑进化（保持兼容性）
-        async function saveEditEvolution(oldKey) {
-            await saveEditEntry(oldKey);
-        }
-
         // 删除条目
         async function deleteEntry(key) {
             if (!confirm(`确定要删除 "${key}" 吗？`)) return;
             
-            if (currentCategory === 'evolutions') {
-                // 删除进化数据
-                delete currentEvolutions[key];
-                // 自动保存进化
-                await autoSaveEvolutions();
-            } else {
-                // 删除字典数据
-                delete currentDictionaries[currentCategory][key];
-                // 自动保存字典
-                await autoSaveDictionaries();
-            }
+            // 删除字典数据
+            delete currentDictionaries[currentCategory][key];
+            // 自动保存字典
+            await autoSaveDictionaries();
             
             renderDictionaryList();
             updateStats();
             showMessage('✅ 删除成功！', 'success');
-        }
-
-        // 删除进化（保持兼容性）
-        async function deleteEvolution(key) {
-            await deleteEntry(key);
         }
 
         // 过滤
@@ -795,10 +1006,577 @@
         window.onload = function() {
             const saved = localStorage.getItem('giteeToken');
             if (saved) document.getElementById('giteeToken').value = saved;
+            evoInit();
+            // 默认显示进化管理模块
+            switchModule('evolution');
         };
         document.getElementById('giteeToken').addEventListener('change', function() {
             localStorage.setItem('giteeToken', this.value);
         });
+
+        // FUTBIN进化监控功能
+        const EVO_CONFIG = {
+            TARGET_HOUR: 2,
+            TARGET_MINUTE: 30,
+            FUTBIN_URL: 'https://www.futbin.com/evolutions',
+            FUTBIN_URL_ALTERNATIVE: 'https://www.futbin.com/26/evolutions',
+            FUTTO_API_URL: 'https://api.fut.to/26/evolutions.json',
+            CORS_PROXIES: [
+                { url: 'https://corsproxy.io/?', encode: true },
+                { url: 'https://api.allorigins.win/raw?url=', encode: true },
+                { url: 'https://cors.bridged.cc/', encode: true },
+                { url: 'https://crossorigin.me/', encode: false },
+                { url: 'https://thingproxy.freeboard.io/fetch/', encode: true },
+                { url: 'https://corsproxy.org/?', encode: true },
+                { url: 'https://api.codetabs.com/v1/proxy/?quest=', encode: true },
+                { url: 'https://proxy.cors.sh/', encode: true },
+                { url: 'https://cors-anywhere.herokuapp.com/', encode: false },
+                { url: 'https://proxy.consumet.org/', encode: true }
+            ],
+            STORAGE_KEY: 'futbin_evo_history',
+            LOG_KEY: 'futbin_evo_logs'
+        };
+
+        let evoHistory = [];
+        let evoLogs = [];
+        let evoIsChecking = false;
+        let evoCurrentProxyIndex = 0;
+
+        function evoInit() {
+            evoLoadHistory();
+            evoLoadLogs();
+            evoUpdateUI();
+            evoStartScheduler();
+            evoAddLog('系统', '监控服务已启动');
+            evoAddLog('系统', `下次检查时间: 今天 ${EVO_CONFIG.TARGET_HOUR.toString().padStart(2, '0')}:${EVO_CONFIG.TARGET_MINUTE.toString().padStart(2, '0')}`);
+        }
+
+        function evoLoadHistory() {
+            try {
+                const saved = localStorage.getItem(EVO_CONFIG.STORAGE_KEY);
+                if (saved) {
+                    evoHistory = JSON.parse(saved);
+                }
+            } catch (e) {
+                evoHistory = [];
+            }
+        }
+
+        function evoSaveHistory() {
+            localStorage.setItem(EVO_CONFIG.STORAGE_KEY, JSON.stringify(evoHistory));
+        }
+
+        function evoLoadLogs() {
+            try {
+                const saved = localStorage.getItem(EVO_CONFIG.LOG_KEY);
+                if (saved) {
+                    evoLogs = JSON.parse(saved);
+                    evoRenderLogs();
+                }
+            } catch (e) {
+                evoLogs = [];
+            }
+        }
+
+        function evoSaveLogs() {
+            const recentLogs = evoLogs.slice(-100);
+            localStorage.setItem(EVO_CONFIG.LOG_KEY, JSON.stringify(recentLogs));
+        }
+
+        function evoAddLog(type, message) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            const dateStr = now.toLocaleDateString('zh-CN');
+            const log = { type, message, time: timeStr, date: dateStr, timestamp: now.getTime() };
+            evoLogs.push(log);
+            evoSaveLogs();
+            evoRenderLog(log);
+        }
+
+        function evoRenderLog(log) {
+            const div = document.createElement('div');
+            const typeColors = {
+                '系统': 'color: #17a2b8;',
+                '抓取': 'color: #28a745;',
+                '错误': 'color: #dc3545;',
+                '发现': 'color: #ffc107;'
+            };
+            div.style.cssText = typeColors[log.type] || 'color: #6c757d;';
+            div.textContent = `[${log.time}] [${log.type}] ${log.message}`;
+            document.getElementById('evo-log-container').appendChild(div);
+            document.getElementById('evo-log-container').scrollTop = document.getElementById('evo-log-container').scrollHeight;
+        }
+
+        function evoRenderLogs() {
+            const container = document.getElementById('evo-log-container');
+            container.innerHTML = '';
+            evoLogs.slice(-50).forEach(log => evoRenderLog(log));
+        }
+
+        function evoUpdateUI() {
+            const today = new Date().toLocaleDateString('zh-CN');
+            const todayItems = evoHistory.filter(item => item.date === today);
+            
+            document.getElementById('evo-today-count').textContent = todayItems.length;
+            document.getElementById('evo-total-count').textContent = evoHistory.length;
+            
+            const lastCheck = localStorage.getItem('evo_last_check_time');
+            if (lastCheck) {
+                document.getElementById('evo-last-check').textContent = lastCheck;
+            }
+            
+            evoRenderNewList(todayItems);
+        }
+
+        function evoRenderNewList(items) {
+            const container = document.getElementById('evo-new-list');
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #999; padding: 32px 0;">
+                        <p>暂无新进化</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 倒序展示
+            const reversedItems = [...items].reverse();
+            
+            container.innerHTML = reversedItems.map(item => `
+                <div class="evo-card">
+                    <div class="evo-header">
+                        <div>
+                            <div class="evo-name">
+                                ${item.name}
+                                <span class="new-tag">NEW</span>
+                            </div>
+                            <div class="evo-time">${item.time}</div>
+                        </div>
+                        <div class="evo-actions">
+                            <button class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px;" onclick="evoCopyName('${item.name}')">
+                                复制
+                            </button>
+                            <a href="${item.url}" target="_blank" class="btn btn-primary" style="font-size: 0.85rem; padding: 6px 12px;">
+                                查看
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function evoCopyName(name) {
+            navigator.clipboard.writeText(name).then(() => {
+                showMessage('✅ 已复制到剪贴板', 'success');
+            });
+        }
+
+        async function evoFetchWithProxy(url) {
+            for (let i = 0; i < EVO_CONFIG.CORS_PROXIES.length; i++) {
+                const proxyIndex = (evoCurrentProxyIndex + i) % EVO_CONFIG.CORS_PROXIES.length;
+                const proxyConfig = EVO_CONFIG.CORS_PROXIES[proxyIndex];
+                const proxyUrl = proxyConfig.encode 
+                    ? proxyConfig.url + encodeURIComponent(url) 
+                    : proxyConfig.url + url;
+                try {
+                    evoAddLog('抓取', `尝试代理 ${proxyIndex + 1}/${EVO_CONFIG.CORS_PROXIES.length}`);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+                    
+                    const response = await fetch(proxyUrl, {
+                        signal: controller.signal,
+                        mode: 'cors',
+                        headers: {
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                        }
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        evoCurrentProxyIndex = proxyIndex;
+                        evoAddLog('抓取', `代理 ${proxyIndex + 1} 连接成功`);
+                        return await response.text();
+                    } else {
+                        evoAddLog('错误', `代理 ${proxyIndex + 1} 返回状态: ${response.status}`);
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') {
+                        evoAddLog('错误', `代理 ${proxyIndex + 1} 超时`);
+                    } else {
+                        evoAddLog('错误', `代理 ${proxyIndex + 1} 失败: ${e.message}`);
+                    }
+                }
+            }
+            throw new Error('所有代理均失败，请检查网络连接或稍后重试');
+        }
+
+        async function evoCheckEvolutions() {
+            if (evoIsChecking) {
+                evoAddLog('系统', '已有检查任务在进行中');
+                return;
+            }
+            
+            evoIsChecking = true;
+            document.getElementById('evo-check-now-btn').disabled = true;
+            document.getElementById('evo-check-now-btn').innerHTML = '<span style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; display: inline-block; margin-right: 8px;"></span>检查中...';
+            document.getElementById('evo-status-dot').style.background = '#f97316';
+            document.getElementById('evo-status-text').textContent = '检查中';
+            
+            evoAddLog('抓取', '开始抓取FUTBIN进化页面...');
+            
+            try {
+                // 先尝试主URL
+                let html = await evoFetchWithProxy(EVO_CONFIG.FUTBIN_URL);
+                
+                // 检查是否是重定向页面或VPN广告
+                if (html.includes('Redirecting...') || html.includes('redirect') || html.includes('VPN') || html.includes('hidemy.name')) {
+                    evoAddLog('抓取', '主URL重定向或被VPN广告拦截，尝试备用URL...');
+                    html = await evoFetchWithProxy(EVO_CONFIG.FUTBIN_URL_ALTERNATIVE);
+                }
+                
+                // 再次检查备用URL是否也被拦截
+                if (html.includes('VPN') || html.includes('hidemy.name')) {
+                    evoAddLog('抓取', '备用URL也被VPN广告拦截，尝试直接使用FUTTO API...');
+                    // 直接从FUTTO API获取数据
+                    const futtoData = await evoFetchFuttoEvolutions();
+                    if (futtoData && futtoData.new && futtoData.new.length > 0) {
+                        evoAddLog('抓取', `从FUTTO API获取到 ${futtoData.new.length} 个进化ID`);
+                        const apiEvolutions = await evoFetchFuttoEvolutionDetails(futtoData.new);
+                        
+                        if (apiEvolutions.length > 0) {
+                            evoAddLog('抓取', `从API获取到 ${apiEvolutions.length} 个新进化`);
+                            
+                            const now = new Date();
+                            const dateStr = now.toLocaleDateString('zh-CN');
+                            const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+                            
+                            apiEvolutions.forEach(evo => {
+                                if (!evoHistory.some(h => h.name === evo.name)) {
+                                    evoHistory.unshift({
+                                        ...evo,
+                                        date: dateStr,
+                                        time: timeStr,
+                                        timestamp: now.getTime()
+                                    });
+                                    evoAddLog('发现', `新进化: ${evo.name}`);
+                                }
+                            });
+                            
+                            evoSaveHistory();
+                            evoUpdateUI();
+                        } else {
+                            evoAddLog('系统', 'FUTTO API也被VPN广告拦截，无法获取进化数据');
+                        }
+                    } else {
+                        evoAddLog('系统', 'FUTTO API也被VPN广告拦截，无法获取进化数据');
+                    }
+                } else {
+                    // 获取FUTTO API数据
+                    const futtoData = await evoFetchFuttoEvolutions();
+                    
+                    evoAddLog('抓取', `成功获取页面内容 (${html.length} 字符)`);
+                    
+                    // 解析FUTBIN页面
+                    const futbinEvolutions = evoParseHtmlContent(html);
+                    
+                    // 处理FUTTO API数据
+                    if (futtoData && futtoData.new && futtoData.new.length > 0) {
+                        evoAddLog('抓取', `从FUTTO API获取到 ${futtoData.new.length} 个进化ID`);
+                        
+                        // 从FUTTO API获取进化名称
+                        const apiEvolutions = await evoFetchFuttoEvolutionDetails(futtoData.new);
+                        
+                        // 合并结果
+                        const allEvolutions = [...futbinEvolutions, ...apiEvolutions];
+                        
+                        // 去重
+                        const uniqueEvolutions = [];
+                        const seenNames = new Set();
+                        
+                        allEvolutions.forEach(evo => {
+                            if (!seenNames.has(evo.name) && !evoHistory.some(h => h.name === evo.name)) {
+                                seenNames.add(evo.name);
+                                uniqueEvolutions.push(evo);
+                            }
+                        });
+                        
+                        if (uniqueEvolutions.length > 0) {
+                            evoAddLog('抓取', `从API获取到 ${uniqueEvolutions.length} 个新进化`);
+                            
+                            const now = new Date();
+                            const dateStr = now.toLocaleDateString('zh-CN');
+                            const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+                            
+                            uniqueEvolutions.forEach(evo => {
+                                evoHistory.unshift({
+                                    ...evo,
+                                    date: dateStr,
+                                    time: timeStr,
+                                    timestamp: now.getTime()
+                                });
+                                evoAddLog('发现', `新进化: ${evo.name}`);
+                            });
+                            
+                            evoSaveHistory();
+                            evoUpdateUI();
+                        } else {
+                            // 如果API获取失败，尝试直接从FUTBIN页面获取
+                            evoAddLog('抓取', 'API获取失败，尝试从FUTBIN页面直接获取...');
+                            
+                            // 解析FUTBIN页面，只获取带有NEW标签的进化
+                            const directEvolutions = evoParseHtmlContent(html);
+                            
+                            if (directEvolutions.length > 0) {
+                                evoAddLog('抓取', `从FUTBIN页面获取到 ${directEvolutions.length} 个带有NEW标签的进化`);
+                                
+                                const now = new Date();
+                                const dateStr = now.toLocaleDateString('zh-CN');
+                                const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+                                
+                                directEvolutions.forEach(evo => {
+                                    if (!evoHistory.some(h => h.name === evo.name)) {
+                                        evoHistory.unshift({
+                                            ...evo,
+                                            date: dateStr,
+                                            time: timeStr,
+                                            timestamp: now.getTime()
+                                        });
+                                        evoAddLog('发现', `新进化: ${evo.name}`);
+                                    }
+                                });
+                                
+                                evoSaveHistory();
+                                evoUpdateUI();
+                            }
+                        }
+                    }
+                }
+                
+                const now = new Date();
+                const checkTime = now.toLocaleTimeString('zh-CN', { hour12: false });
+                localStorage.setItem('evo_last_check_time', checkTime);
+                document.getElementById('evo-last-check').textContent = checkTime;
+                
+            } catch (error) {
+                evoAddLog('错误', `抓取失败: ${error.message}`);
+            }
+            
+            evoIsChecking = false;
+            document.getElementById('evo-check-now-btn').disabled = false;
+            document.getElementById('evo-check-now-btn').innerHTML = '<span>🔄 立即检查</span>';
+            document.getElementById('evo-status-dot').style.background = '#28a745';
+            document.getElementById('evo-status-text').textContent = '运行中';
+        }
+
+        function evoParseHtmlContent(html) {
+            const evolutions = [];
+            try {
+                // 解析页面内容
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // 查找进化链接
+                const links = doc.querySelectorAll('a[href*="/evolutions/"]');
+                evoAddLog('抓取', `共检查 ${links.length} 个链接`);
+                
+                let foundLinks = new Set();
+                
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && !foundLinks.has(href)) {
+                        foundLinks.add(href);
+                        
+                        // 检查是否有NEW标签（使用与FUTBIN-evo相同的选择器）
+                        const hasNewTag = link.querySelector('.evolution-badge.positive, .evolution-badge.bold.positive, [class*="new"], [class*="NEW"]') || 
+                                       Array.from(link.querySelectorAll('span')).some(span => 
+                                           span.textContent.toUpperCase().includes('NEW'));
+                        
+                        if (hasNewTag) {
+                            // 提取进化名称
+                            let name = '';
+                            const nameElement = link.querySelector('.xs-font.text-center, [class*="text"]');
+                            if (nameElement) {
+                                name = nameElement.textContent.trim();
+                            } else {
+                                // 尝试从整个链接文本中提取
+                                name = link.textContent.trim();
+                            }
+                            
+                            // 移除new相关文本
+                            name = name.replace(/new/gi, '').replace(/NEW/g, '').trim();
+                            // 移除多余的空白字符
+                            name = name.replace(/\s+/g, ' ').trim();
+                            
+                            // 过滤掉不需要的内容
+                            const isInvalid = name.includes('Rewards') || 
+                                            name.includes('Expires') || 
+                                            name.includes('Unlock') || 
+                                            name.includes('Free Repeatable') ||
+                                            name.includes('Celebrate') ||
+                                            name.includes('Step into') ||
+                                            name.includes('UNLOCK') ||
+                                            name.length < 3 ||
+                                            name.length > 200;
+                            
+                            if (!isInvalid) {
+                                const url = href.startsWith('http') ? href : `https://www.futbin.com${href}`;
+                                evolutions.push({
+                                    name: name,
+                                    url: url
+                                });
+                                evoAddLog('发现', `检测到新进化: ${name}`);
+                            }
+                        }
+                    }
+                });
+                
+                evoAddLog('抓取', `找到 ${evolutions.length} 个进化链接，其中 ${evolutions.length} 个带有NEW标签`);
+            } catch (e) {
+                evoAddLog('错误', `解析失败: ${e.message}`);
+            }
+            return evolutions;
+        }
+
+        function evoParseHtmlContentDirect(html) {
+            const evolutions = [];
+            try {
+                // 解析页面内容
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // 查找进化链接
+                const links = doc.querySelectorAll('a[href*="/evolutions/"]');
+                evoAddLog('抓取', `共检查 ${links.length} 个链接（直接解析模式）`);
+                
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    const name = link.textContent.trim();
+                    
+                    if (name && href && !name.includes('http')) {
+                        // 过滤掉不需要的内容
+                        const isInvalid = name.includes('Rewards') || 
+                                        name.includes('Expires') || 
+                                        name.includes('Unlock') || 
+                                        name.includes('Free Repeatable') ||
+                                        name.includes('Celebrate') ||
+                                        name.includes('Step into') ||
+                                        name.includes('UNLOCK') ||
+                                        name.includes('Evolution') ||
+                                        name.includes('evolution') ||
+                                        name.length < 5;
+                        
+                        // 只保留看起来像进化名称的内容
+                        if (!isInvalid && href.match(/\/evolutions\/\d+/)) {
+                            evolutions.push({
+                                name: name,
+                                url: href.startsWith('http') ? href : `https://www.futbin.com${href}`
+                            });
+                        }
+                    }
+                });
+                
+                // 去重
+                const uniqueEvolutions = [];
+                const seenNames = new Set();
+                evolutions.forEach(evo => {
+                    if (!seenNames.has(evo.name)) {
+                        seenNames.add(evo.name);
+                        uniqueEvolutions.push(evo);
+                    }
+                });
+                
+                evoAddLog('抓取', `直接从页面获取到 ${uniqueEvolutions.length} 个进化`);
+                return uniqueEvolutions;
+            } catch (e) {
+                evoAddLog('错误', `直接解析失败: ${e.message}`);
+                return [];
+            }
+        }
+
+        async function evoFetchFuttoEvolutions() {
+            try {
+                const data = await evoFetchWithProxy(EVO_CONFIG.FUTTO_API_URL);
+                
+                // 检查返回内容是否是JSON
+                if (data.startsWith('<')) {
+                    evoAddLog('错误', 'FUTTO API返回HTML而不是JSON，可能被VPN广告拦截');
+                    return null;
+                }
+                
+                return JSON.parse(data);
+            } catch (e) {
+                evoAddLog('错误', `FUTTO API抓取失败: ${e.message}`);
+                return null;
+            }
+        }
+
+        async function evoFetchFuttoEvolutionDetails(evolutionIds) {
+            const evolutions = [];
+            evoAddLog('抓取', `开始获取 ${evolutionIds.length} 个进化的详细信息`);
+            
+            for (const id of evolutionIds) {
+                try {
+                    const url = `https://api.fut.to/26/evolution/${id}.json`;
+                    const data = await evoFetchWithProxy(url);
+                    
+                    // 检查返回内容是否是JSON
+                    if (data.startsWith('<')) {
+                        evoAddLog('抓取', `进化 ${id} 返回HTML，跳过`);
+                        continue;
+                    }
+                    
+                    const evoData = JSON.parse(data);
+                    if (evoData.name) {
+                        evolutions.push({
+                            name: evoData.name,
+                            url: `https://www.futbin.com/26/evolutions/${id}`
+                        });
+                        evoAddLog('抓取', `成功获取进化 ${id}: ${evoData.name}`);
+                    }
+                } catch (e) {
+                    // 只记录非HTML错误
+                    if (!e.message.includes('Unexpected token <')) {
+                        evoAddLog('错误', `进化 ${id} 详情获取失败: ${e.message}`);
+                    } else {
+                        evoAddLog('抓取', `进化 ${id} 解析失败，跳过`);
+                    }
+                }
+            }
+            
+            evoAddLog('抓取', `成功获取 ${evolutions.length} 个进化的详细信息`);
+            return evolutions;
+        }
+
+        function evoClearToday() {
+            if (confirm('确定要清空今日的进化记录吗？')) {
+                const today = new Date().toLocaleDateString('zh-CN');
+                evoHistory = evoHistory.filter(item => item.date !== today);
+                evoSaveHistory();
+                evoUpdateUI();
+                evoAddLog('系统', '今日进化记录已清空');
+            }
+        }
+
+        function evoStartScheduler() {
+            function checkSchedule() {
+                const now = new Date();
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                
+                if (hours === EVO_CONFIG.TARGET_HOUR && minutes === EVO_CONFIG.TARGET_MINUTE) {
+                    evoCheckEvolutions();
+                }
+            }
+            
+            // 每分钟检查一次
+            setInterval(checkSchedule, 60000);
+        }
+
+        function evoClearLogs() {
+            evoLogs = [];
+            evoSaveLogs();
+            evoRenderLogs();
+        }
     </script>
 </body>
 </html>
