@@ -468,6 +468,20 @@
                     </div>
                     <button class="btn btn-success" onclick="addEvolution()">添加</button>
                 </div>
+                <div class="form-row" style="margin-top: 12px;">
+                    <div class="form-group">
+                        <label>FUTBIN ID (可选)</label>
+                        <input type="text" id="newEvoFutbinId" placeholder="例如：1070">
+                    </div>
+                    <div class="form-group">
+                        <label>FUTGG ID (可选)</label>
+                        <input type="text" id="newEvoFutggId" placeholder="例如：2245">
+                    </div>
+                    <div class="form-group">
+                        <label>EASYSBC ID (可选)</label>
+                        <input type="text" id="newEvoEasysbcId" placeholder="例如：2277">
+                    </div>
+                </div>
             </div>
 
             <!-- 进化搜索框 -->
@@ -491,7 +505,7 @@
         const EVO_PATH = 'evolutions.json';
 
         let currentDictionaries = {};
-        let currentEvolutions = {};
+        let currentEvolutions = [];
         let dictSha = '';
         let evoSha = '';
         let currentCategory = 'basic';
@@ -625,7 +639,16 @@
                 currentDictionaries = dictData.content;
                 dictSha = dictData.sha;
                 
-                currentEvolutions = evoData.content;
+                currentEvolutions = Object.entries(evoData.content).map(([key, value], index) => ({
+                    id: index + 1,
+                    key: key.replace(/#\d+$/, ''),
+                    CN: typeof value === 'object' && value.CN ? value.CN : value,
+                    source: typeof value === 'object' && value.source ? value.source : '',
+                    futbin_id: typeof value === 'object' && value.futbin_id ? value.futbin_id : '',
+                    futgg_id: typeof value === 'object' && value.futgg_id ? value.futgg_id : '',
+                    easysbc_id: typeof value === 'object' && value.easysbc_id ? value.easysbc_id : '',
+                    timestamp: typeof value === 'object' && value.timestamp ? value.timestamp : Date.now()
+                }));
                 evoSha = evoData.sha;
                 
                 // 初始化缺失分类
@@ -680,11 +703,31 @@
             showMessage('正在保存到 Gitee...', 'info');
             
             try {
-                // 获取最新 SHA
                 const latest = await getFileContent(EVO_PATH, token);
+                
+                const evoObject = {};
+                const keyCount = {};
+                currentEvolutions.forEach(entry => {
+                    let finalKey = entry.key;
+                    if (keyCount[entry.key]) {
+                        keyCount[entry.key]++;
+                        finalKey = `${entry.key}#${keyCount[entry.key]}`;
+                    } else {
+                        keyCount[entry.key] = 1;
+                    }
+                    evoObject[finalKey] = {
+                        CN: entry.CN,
+                        timestamp: entry.timestamp,
+                        ...(entry.source && { source: entry.source }),
+                        ...(entry.futbin_id && { futbin_id: entry.futbin_id }),
+                        ...(entry.futgg_id && { futgg_id: entry.futgg_id }),
+                        ...(entry.easysbc_id && { easysbc_id: entry.easysbc_id })
+                    };
+                });
+                
                 evoSha = await saveFileContent(
                     EVO_PATH, 
-                    currentEvolutions, 
+                    evoObject, 
                     latest.sha, 
                     token, 
                     'Update evolutions.json via web manager'
@@ -726,8 +769,8 @@
 
         // 更新进化统计
         function updateEvoStats() {
-            const total = Object.keys(currentEvolutions).length;
-            const withSource = Object.entries(currentEvolutions).filter(([k, v]) => v.source && v.source.trim()).length;
+            const total = currentEvolutions.length;
+            const withSource = currentEvolutions.filter(v => v.source && v.source.trim()).length;
             const noSource = total - withSource;
             
             document.getElementById('evoTotalCount').textContent = total;
@@ -740,17 +783,14 @@
             const list = document.getElementById('evolutionList');
             const search = document.getElementById('evoSearchInput').value.toLowerCase();
             
-            let entries = Object.entries(currentEvolutions).filter(([k, v]) => {
-                const cn = typeof v === 'object' && v.CN ? v.CN : v;
-                const source = typeof v === 'object' && v.source ? v.source : '';
-                const text = `${k} ${cn} ${source}`.toLowerCase();
+            let entries = currentEvolutions.filter(entry => {
+                const text = `${entry.key} ${entry.CN} ${entry.source || ''}`.toLowerCase();
                 return text.includes(search);
             });
 
-            // 按添加时间排序（新到旧）
             entries.sort((a, b) => {
-                const timeA = (typeof a[1] === 'object' && a[1].timestamp) || 0;
-                const timeB = (typeof b[1] === 'object' && b[1].timestamp) || 0;
+                const timeA = a.timestamp || 0;
+                const timeB = b.timestamp || 0;
                 return timeB - timeA;
             });
 
@@ -759,21 +799,23 @@
                 return;
             }
 
-            list.innerHTML = entries.map(([key, value]) => {
-                const cn = typeof value === 'object' && value.CN ? value.CN : value;
-                const source = typeof value === 'object' && value.source ? value.source : '';
+            list.innerHTML = entries.map(entry => {
+                const { key, CN, source, futbin_id, futgg_id, easysbc_id, id } = entry;
                 
                 return `
-                <div class="dictionary-item" data-key="${key}">
+                <div class="dictionary-item" data-key="${id}">
                     <div class="dictionary-info">
                         <span class="dictionary-key">${key}</span>
                         <span class="arrow" style="margin: 0 12px; color: #667eea; font-size: 1.1em; font-weight: 500;">→</span>
-                        <span class="dictionary-value">${cn}</span>
+                        <span class="dictionary-value">${CN}</span>
                         ${source ? `<span class="dictionary-shorten" style="background: #fff3cd; color: #856404;">【${source}】</span>` : ''}
+                        ${futbin_id ? `<span class="dictionary-shorten" style="background: #e7f3ff; color: #0c63e4; font-size: 0.75em; margin-left: 4px;">FB:${futbin_id}</span>` : ''}
+                        ${futgg_id ? `<span class="dictionary-shorten" style="background: #e7ffeb; color: #0d7a10; font-size: 0.75em; margin-left: 4px;">GG:${futgg_id}</span>` : ''}
+                        ${easysbc_id ? `<span class="dictionary-shorten" style="background: #fff5e7; color: #b45309; font-size: 0.75em; margin-left: 4px;">ES:${easysbc_id}</span>` : ''}
                     </div>
                     <div class="actions">
-                        <button class="btn btn-secondary" onclick="editEvolutionEntry('${key}')">编辑</button>
-                        <button class="btn btn-danger" onclick="deleteEvolutionEntry('${key}')">删除</button>
+                        <button class="btn btn-secondary" onclick="editEvolutionEntry(${id})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteEvolutionEntry(${id})">删除</button>
                     </div>
                 </div>
                 `;
@@ -790,17 +832,26 @@
             const key = document.getElementById('newEvoKey').value.trim();
             const cn = document.getElementById('newEvoCN').value.trim();
             const source = document.getElementById('newEvoSource').value.trim();
+            const futbinId = document.getElementById('newEvoFutbinId').value.trim();
+            const futggId = document.getElementById('newEvoFutggId').value.trim();
+            const easysbcId = document.getElementById('newEvoEasysbcId').value.trim();
             
             if (!key || !cn) {
                 showMessage('请输入英文名称和中文翻译', 'error');
                 return;
             }
             
-            currentEvolutions[key] = {
+            const newId = currentEvolutions.length > 0 ? Math.max(...currentEvolutions.map(e => e.id)) + 1 : 1;
+            currentEvolutions.push({
+                id: newId,
+                key: key,
                 CN: cn,
                 timestamp: Date.now(),
-                ...(source && { source })
-            };
+                ...(source && { source }),
+                ...(futbinId && { futbin_id: futbinId }),
+                ...(futggId && { futgg_id: futggId }),
+                ...(easysbcId && { easysbc_id: easysbcId })
+            });
             
             await autoSaveEvolutions();
             
@@ -808,6 +859,9 @@
             document.getElementById('newEvoKey').value = '';
             document.getElementById('newEvoCN').value = '';
             document.getElementById('newEvoSource').value = '';
+            document.getElementById('newEvoFutbinId').value = '';
+            document.getElementById('newEvoFutggId').value = '';
+            document.getElementById('newEvoEasysbcId').value = '';
             
             updateEvoStats();
             renderEvolutionList();
@@ -815,39 +869,69 @@
         }
 
         // 编辑进化
-        function editEvolutionEntry(key) {
-            const item = document.querySelector(`#evolutionList .dictionary-item[data-key="${key}"]`);
-            const value = currentEvolutions[key];
+        function editEvolutionEntry(id) {
+            const item = document.querySelector(`#evolutionList .dictionary-item[data-key="${id}"]`);
+            const entry = currentEvolutions.find(e => e.id === id);
             
-            const cn = typeof value === 'object' && value.CN ? value.CN : value;
-            const source = typeof value === 'object' && value.source ? value.source : '';
+            if (!entry) return;
+            
+            const { key, CN, source, futbin_id, futgg_id, easysbc_id } = entry;
             
             item.innerHTML = `
                 <div class="edit-form" style="width: 100%; flex-wrap: wrap;">
-                    <input type="text" value="${key}" id="edit-evo-key-${key}" style="flex: 1; min-width: 150px;" readonly>
-                    <input type="text" value="${cn}" id="edit-evo-cn-${key}" style="flex: 2; min-width: 150px;" placeholder="中文翻译">
-                    <input type="text" value="${source}" id="edit-evo-source-${key}" style="flex: 1; min-width: 100px;" placeholder="来源">
-                    <button class="btn btn-success" onclick="saveEditEvolutionEntry('${key}')">保存</button>
+                    <input type="text" value="${key}" id="edit-evo-key-${id}" style="flex: 1; min-width: 150px;" readonly>
+                    <input type="text" value="${CN}" id="edit-evo-cn-${id}" style="flex: 2; min-width: 150px;" placeholder="中文翻译">
+                    <input type="text" value="${source || ''}" id="edit-evo-source-${id}" style="flex: 1; min-width: 100px;" placeholder="来源">
+                    <input type="text" value="${futbin_id || ''}" id="edit-evo-futbin-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTBIN ID">
+                    <input type="text" value="${futgg_id || ''}" id="edit-evo-futgg-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTGG ID">
+                    <input type="text" value="${easysbc_id || ''}" id="edit-evo-easysbc-${id}" style="flex: 1; min-width: 80px;" placeholder="EASYSBC ID">
+                    <button class="btn btn-success" onclick="saveEditEvolutionEntry(${id})">保存</button>
                     <button class="btn btn-secondary" onclick="renderEvolutionList()">取消</button>
                 </div>
             `;
         }
 
         // 保存编辑进化
-        async function saveEditEvolutionEntry(oldKey) {
-            const cn = document.getElementById(`edit-evo-cn-${oldKey}`).value.trim();
-            const source = document.getElementById(`edit-evo-source-${oldKey}`).value.trim();
+        async function saveEditEvolutionEntry(id) {
+            const entry = currentEvolutions.find(e => e.id === id);
+            if (!entry) return;
+            
+            const cn = document.getElementById(`edit-evo-cn-${id}`).value.trim();
+            const source = document.getElementById(`edit-evo-source-${id}`).value.trim();
+            const futbinId = document.getElementById(`edit-evo-futbin-${id}`).value.trim();
+            const futggId = document.getElementById(`edit-evo-futgg-${id}`).value.trim();
+            const easysbcId = document.getElementById(`edit-evo-easysbc-${id}`).value.trim();
             
             if (!cn) {
                 showMessage('请输入中文翻译', 'error');
                 return;
             }
             
-            currentEvolutions[oldKey] = {
+            Object.assign(entry, {
                 CN: cn,
-                timestamp: Date.now(),
-                ...(source && { source })
-            };
+                timestamp: Date.now()
+            });
+            
+            if (source) {
+                entry.source = source;
+            } else {
+                delete entry.source;
+            }
+            if (futbinId) {
+                entry.futbin_id = futbinId;
+            } else {
+                delete entry.futbin_id;
+            }
+            if (futggId) {
+                entry.futgg_id = futggId;
+            } else {
+                delete entry.futgg_id;
+            }
+            if (easysbcId) {
+                entry.easysbc_id = easysbcId;
+            } else {
+                delete entry.easysbc_id;
+            }
             
             await autoSaveEvolutions();
             
@@ -857,10 +941,16 @@
         }
 
         // 删除进化
-        async function deleteEvolutionEntry(key) {
-            if (!confirm(`确定要删除进化 "${key}" 吗？`)) return;
+        async function deleteEvolutionEntry(id) {
+            const entry = currentEvolutions.find(e => e.id === id);
+            if (!entry) return;
             
-            delete currentEvolutions[key];
+            if (!confirm(`确定要删除进化 "${entry.key}" 吗？`)) return;
+            
+            const index = currentEvolutions.findIndex(e => e.id === id);
+            if (index > -1) {
+                currentEvolutions.splice(index, 1);
+            }
             await autoSaveEvolutions();
             
             renderEvolutionList();
