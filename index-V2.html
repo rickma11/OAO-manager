@@ -512,14 +512,27 @@
         // 切换模块
         function switchModule(module) {
             currentModule = module;
-            
+
             // 更新页签样式
             document.getElementById('moduleTabEvo').classList.toggle('active', module === 'evolution');
             document.getElementById('moduleTabDict').classList.toggle('active', module === 'dictionary');
-            
+
             // 切换卡片显示
             document.getElementById('evolutionCard').style.display = module === 'evolution' ? 'block' : 'none';
             document.getElementById('dictionaryCard').style.display = module === 'dictionary' ? 'block' : 'none';
+        }
+
+        // 切换字典标签页
+        function switchTab(category) {
+            currentCategory = category;
+
+            // 更新标签页样式
+            document.querySelectorAll('#categoryTabs .tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.category === category);
+            });
+
+            // 重新渲染字典列表
+            renderDictionaryList();
         }
 
         function showMessage(text, type = 'info') {
