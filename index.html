@@ -258,6 +258,36 @@
             margin-left: 8px;
         }
         
+        /* 模块切换页签样式 */
+        .module-tab {
+            flex: 1;
+            padding: 16px 24px;
+            cursor: pointer;
+            border: none;
+            background: #f8f9fa;
+            color: #666;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        .module-tab:hover {
+            background: #e9ecef;
+            color: #667eea;
+        }
+        .module-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+            box-shadow: inset 0 -3px 0 #667eea;
+        }
+        .module-tab:first-child {
+            border-radius: 16px 0 0 0;
+        }
+        .module-tab:last-child {
+            border-radius: 0 16px 0 0;
+        }
+        
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -269,6 +299,7 @@
             .tab { white-space: nowrap; }
             .dictionary-item { flex-direction: column; align-items: flex-start; gap: 10px; }
             .actions { width: 100%; justify-content: flex-end; }
+            .module-tab { padding: 12px 16px; font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -294,6 +325,17 @@
             </div>
         </div>
 
+        <!-- 模块切换页签 -->
+        <div class="card" style="padding: 0; margin-bottom: 20px;">
+            <div class="module-tabs" style="display: flex; gap: 0;">
+                <button class="module-tab active" id="moduleTabEvo" onclick="switchModule('evolution')">
+                    <span>🧬 进化管理</span>
+                </button>
+                <button class="module-tab" id="moduleTabDict" onclick="switchModule('dictionary')">
+                    <span>📚 内置字典</span>
+                </button>
+            </div>
+        </div>
 
         <div id="message" class="message"></div>
 
@@ -328,7 +370,6 @@
                 <button class="tab" data-category="futgg" onclick="switchTab('futgg')">FUTGG</button>
                 <button class="tab" data-category="futbin" onclick="switchTab('futbin')">FUTBIN</button>
                 <button class="tab" data-category="easysbc" onclick="switchTab('easysbc')">EASYSBC</button>
-                <button class="tab" data-category="evolutions" onclick="switchTab('evolutions')">进化</button>
             </div>
 
             <!-- 添加表单 -->
@@ -361,7 +402,6 @@
                             <option value="futgg">FUTGG</option>
                             <option value="futbin">FUTBIN</option>
                             <option value="easysbc">EASYSBC</option>
-                            <option value="evolutions">进化</option>
                         </select>
                     </div>
                 </div>
@@ -376,6 +416,83 @@
             <div id="dictionaryList" class="dictionary-list"></div>
         </div>
 
+        <!-- 进化管理卡片 -->
+        <div class="card" id="evolutionCard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 class="section-title" style="margin: 0; border: none; padding: 0;">🧬 进化管理</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="auto-save-toggle" style="margin: 0;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoSaveEvo" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>自动保存</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveEvolutions()">
+                        <span>💾 手动保存</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 进化统计 -->
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="evoTotalCount">0</div>
+                    <div class="stat-label">进化总数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="evoWithSourceCount">0</div>
+                    <div class="stat-label">有来源</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="evoNoSourceCount">0</div>
+                    <div class="stat-label">无来源</div>
+                </div>
+            </div>
+
+            <!-- 进化添加表单 -->
+            <div class="add-form">
+                <h3 style="margin-bottom: 16px; color: #333;">➕ 添加新进化</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>英文名称 (Key)</label>
+                        <input type="text" id="newEvoKey" placeholder="例如：PhD In Dribbling">
+                    </div>
+                    <div class="form-group">
+                        <label>中文翻译</label>
+                        <input type="text" id="newEvoCN" placeholder="例如：盘带博士">
+                    </div>
+                    <div class="form-group">
+                        <label>来源 (可选)</label>
+                        <input type="text" id="newEvoSource" placeholder="例如：日本任务">
+                    </div>
+                    <button class="btn btn-success" onclick="addEvolution()">添加</button>
+                </div>
+                <div class="form-row" style="margin-top: 12px;">
+                    <div class="form-group">
+                        <label>FUTBIN ID (可选)</label>
+                        <input type="text" id="newEvoFutbinId" placeholder="例如：1070">
+                    </div>
+                    <div class="form-group">
+                        <label>FUTGG ID (可选)</label>
+                        <input type="text" id="newEvoFutggId" placeholder="例如：2245">
+                    </div>
+                    <div class="form-group">
+                        <label>EASYSBC ID (可选)</label>
+                        <input type="text" id="newEvoEasysbcId" placeholder="例如：2277">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 进化搜索框 -->
+            <div class="search-box">
+                <input type="text" id="evoSearchInput" placeholder="🔍 搜索进化名称或翻译..." oninput="filterEvolutions()">
+            </div>
+
+            <!-- 进化列表 -->
+            <div id="evolutionList" class="dictionary-list"></div>
+        </div>
+
 
     </div>
 
@@ -385,13 +502,14 @@
         const GITEE_BRANCH = 'master';
         
         const DICT_PATH = 'built-in-dictionaries.json';
-        const EVO_PATH = 'evolutions.json';
+        const EVO_PATH = 'evolutions1.json';
 
         let currentDictionaries = {};
-        let currentEvolutions = {};
+        let currentEvolutions = [];
         let dictSha = '';
         let evoSha = '';
         let currentCategory = 'basic';
+        let currentModule = 'evolution'; // 当前模块：evolution 或 dictionary
 
         const categoryNames = {
             basic: '基础信息',
@@ -404,6 +522,32 @@
             easysbc: 'EASYSBC',
             evolutions: '进化'
         };
+
+        // 切换模块
+        function switchModule(module) {
+            currentModule = module;
+
+            // 更新页签样式
+            document.getElementById('moduleTabEvo').classList.toggle('active', module === 'evolution');
+            document.getElementById('moduleTabDict').classList.toggle('active', module === 'dictionary');
+
+            // 切换卡片显示
+            document.getElementById('evolutionCard').style.display = module === 'evolution' ? 'block' : 'none';
+            document.getElementById('dictionaryCard').style.display = module === 'dictionary' ? 'block' : 'none';
+        }
+
+        // 切换字典标签页
+        function switchTab(category) {
+            currentCategory = category;
+
+            // 更新标签页样式
+            document.querySelectorAll('#categoryTabs .tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.category === category);
+            });
+
+            // 重新渲染字典列表
+            renderDictionaryList();
+        }
 
         function showMessage(text, type = 'info') {
             const msg = document.getElementById('message');
@@ -495,7 +639,33 @@
                 currentDictionaries = dictData.content;
                 dictSha = dictData.sha;
                 
-                currentEvolutions = evoData.content;
+                // 支持新数组格式和旧对象格式
+                const evoContent = evoData.content;
+                if (Array.isArray(evoContent)) {
+                    // 新数组格式：直接映射，name字段作为key
+                    currentEvolutions = evoContent.map((entry, index) => ({
+                        id: index + 1,
+                        key: entry.name || '',
+                        CN: typeof entry === 'object' && entry.CN ? entry.CN : '',
+                        source: typeof entry === 'object' && entry.source ? entry.source : '',
+                        futbin_id: typeof entry === 'object' && entry.futbin_id ? entry.futbin_id : '',
+                        futgg_id: typeof entry === 'object' && entry.futgg_id ? entry.futgg_id : '',
+                        easysbc_id: typeof entry === 'object' && entry.easysbc_id ? entry.easysbc_id : '',
+                        timestamp: typeof entry === 'object' && entry.timestamp ? entry.timestamp : Date.now()
+                    }));
+                } else {
+                    // 旧对象格式：兼容处理（移除#数字后缀）
+                    currentEvolutions = Object.entries(evoContent).map(([key, value], index) => ({
+                        id: index + 1,
+                        key: key.replace(/#\d+$/, ''),
+                        CN: typeof value === 'object' && value.CN ? value.CN : value,
+                        source: typeof value === 'object' && value.source ? value.source : '',
+                        futbin_id: typeof value === 'object' && value.futbin_id ? value.futbin_id : '',
+                        futgg_id: typeof value === 'object' && value.futgg_id ? value.futgg_id : '',
+                        easysbc_id: typeof value === 'object' && value.easysbc_id ? value.easysbc_id : '',
+                        timestamp: typeof value === 'object' && value.timestamp ? value.timestamp : Date.now()
+                    }));
+                }
                 evoSha = evoData.sha;
                 
                 // 初始化缺失分类
@@ -505,9 +675,12 @@
                     }
                 });
                 
-                document.getElementById('dictionaryCard').style.display = 'block';
+                // 默认显示进化管理模块
+                switchModule('evolution');
                 updateStats();
+                updateEvoStats();
                 renderDictionaryList();
+                renderEvolutionList();
                 showMessage('✅ 所有数据加载成功！', 'success');
             } catch (error) {
                 console.error('加载错误:', error);
@@ -547,11 +720,22 @@
             showMessage('正在保存到 Gitee...', 'info');
             
             try {
-                // 获取最新 SHA
                 const latest = await getFileContent(EVO_PATH, token);
+                
+                // 直接保存为数组格式，使用timestamp作为唯一标识
+                const evoArray = currentEvolutions.map(entry => ({
+                    name: entry.key,
+                    CN: entry.CN,
+                    timestamp: entry.timestamp,
+                    ...(entry.source && { source: entry.source }),
+                    ...(entry.futbin_id && { futbin_id: entry.futbin_id }),
+                    ...(entry.futgg_id && { futgg_id: entry.futgg_id }),
+                    ...(entry.easysbc_id && { easysbc_id: entry.easysbc_id })
+                }));
+                
                 evoSha = await saveFileContent(
                     EVO_PATH, 
-                    currentEvolutions, 
+                    evoArray, 
                     latest.sha, 
                     token, 
                     'Update evolutions.json via web manager'
@@ -571,7 +755,7 @@
 
         // 自动保存进化
         async function autoSaveEvolutions() {
-            if (!document.getElementById('autoSave').checked) return;
+            if (!document.getElementById('autoSaveEvo').checked) return;
             await saveEvolutions();
         }
 
@@ -581,12 +765,8 @@
             container.innerHTML = '';
             
             Object.keys(categoryNames).forEach(category => {
-                let count = 0;
-                if (category === 'evolutions') {
-                    count = Object.keys(currentEvolutions).length;
-                } else {
-                    count = Object.keys(currentDictionaries[category] || {}).length;
-                }
+                if (category === 'evolutions') return; // 进化有独立统计
+                let count = Object.keys(currentDictionaries[category] || {}).length;
                 
                 const item = document.createElement('div');
                 item.className = 'stat-item';
@@ -595,16 +775,201 @@
             });
         }
 
+        // 更新进化统计
+        function updateEvoStats() {
+            const total = currentEvolutions.length;
+            const withSource = currentEvolutions.filter(v => v.source && v.source.trim()).length;
+            const noSource = total - withSource;
+            
+            document.getElementById('evoTotalCount').textContent = total;
+            document.getElementById('evoWithSourceCount').textContent = withSource;
+            document.getElementById('evoNoSourceCount').textContent = noSource;
+        }
 
-
-        // 切换标签
-        function switchTab(category) {
-            currentCategory = category;
-            document.querySelectorAll('#categoryTabs .tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.category === category);
+        // 渲染进化列表
+        function renderEvolutionList() {
+            const list = document.getElementById('evolutionList');
+            const search = document.getElementById('evoSearchInput').value.toLowerCase();
+            
+            let entries = currentEvolutions.filter(entry => {
+                const text = `${entry.key} ${entry.CN} ${entry.source || ''}`.toLowerCase();
+                return text.includes(search);
             });
-            document.getElementById('newCategory').value = category;
-            renderDictionaryList();
+
+            entries.sort((a, b) => {
+                const timeA = a.timestamp || 0;
+                const timeB = b.timestamp || 0;
+                return timeB - timeA;
+            });
+
+            if (entries.length === 0) {
+                list.innerHTML = `<div class="empty-state"><p>${search ? '没有找到匹配的进化' : '暂无进化数据'}</p></div>`;
+                return;
+            }
+
+            list.innerHTML = entries.map(entry => {
+                const { key, CN, source, futbin_id, futgg_id, easysbc_id, id } = entry;
+                
+                return `
+                <div class="dictionary-item" data-key="${id}">
+                    <div class="dictionary-info">
+                        <span class="dictionary-key">${key}</span>
+                        <span class="arrow" style="margin: 0 12px; color: #667eea; font-size: 1.1em; font-weight: 500;">→</span>
+                        <span class="dictionary-value">${CN}</span>
+                        ${source ? `<span class="dictionary-shorten" style="background: #fff3cd; color: #856404;">【${source}】</span>` : ''}
+                        ${futbin_id ? `<span class="dictionary-shorten" style="background: #e7f3ff; color: #0c63e4; font-size: 0.75em; margin-left: 4px;">FB:${futbin_id}</span>` : ''}
+                        ${futgg_id ? `<span class="dictionary-shorten" style="background: #e7ffeb; color: #0d7a10; font-size: 0.75em; margin-left: 4px;">GG:${futgg_id}</span>` : ''}
+                        ${easysbc_id ? `<span class="dictionary-shorten" style="background: #fff5e7; color: #b45309; font-size: 0.75em; margin-left: 4px;">ES:${easysbc_id}</span>` : ''}
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="editEvolutionEntry(${id})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteEvolutionEntry(${id})">删除</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // 过滤进化列表
+        function filterEvolutions() {
+            renderEvolutionList();
+        }
+
+        // 添加进化
+        async function addEvolution() {
+            const key = document.getElementById('newEvoKey').value.trim();
+            const cn = document.getElementById('newEvoCN').value.trim();
+            const source = document.getElementById('newEvoSource').value.trim();
+            const futbinId = document.getElementById('newEvoFutbinId').value.trim();
+            const futggId = document.getElementById('newEvoFutggId').value.trim();
+            const easysbcId = document.getElementById('newEvoEasysbcId').value.trim();
+            
+            if (!key || !cn) {
+                showMessage('请输入英文名称和中文翻译', 'error');
+                return;
+            }
+            
+            const newId = currentEvolutions.length > 0 ? Math.max(...currentEvolutions.map(e => e.id)) + 1 : 1;
+            currentEvolutions.push({
+                id: newId,
+                key: key,
+                CN: cn,
+                timestamp: Date.now(),
+                ...(source && { source }),
+                ...(futbinId && { futbin_id: futbinId }),
+                ...(futggId && { futgg_id: futggId }),
+                ...(easysbcId && { easysbc_id: easysbcId })
+            });
+            
+            await autoSaveEvolutions();
+            
+            // 清空表单
+            document.getElementById('newEvoKey').value = '';
+            document.getElementById('newEvoCN').value = '';
+            document.getElementById('newEvoSource').value = '';
+            document.getElementById('newEvoFutbinId').value = '';
+            document.getElementById('newEvoFutggId').value = '';
+            document.getElementById('newEvoEasysbcId').value = '';
+            
+            updateEvoStats();
+            renderEvolutionList();
+            showMessage('✅ 进化添加成功！', 'success');
+        }
+
+        // 编辑进化
+        function editEvolutionEntry(id) {
+            const item = document.querySelector(`#evolutionList .dictionary-item[data-key="${id}"]`);
+            const entry = currentEvolutions.find(e => e.id === id);
+            
+            if (!entry) return;
+            
+            const { key, CN, source, futbin_id, futgg_id, easysbc_id } = entry;
+            
+            item.innerHTML = `
+                <div class="edit-form" style="width: 100%; flex-wrap: wrap;">
+                    <input type="text" value="${key}" id="edit-evo-key-${id}" style="flex: 1; min-width: 150px;" placeholder="英文名称">
+                    <input type="text" value="${CN}" id="edit-evo-cn-${id}" style="flex: 2; min-width: 150px;" placeholder="中文翻译">
+                    <input type="text" value="${source || ''}" id="edit-evo-source-${id}" style="flex: 1; min-width: 100px;" placeholder="来源">
+                    <input type="text" value="${futbin_id || ''}" id="edit-evo-futbin-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTBIN ID">
+                    <input type="text" value="${futgg_id || ''}" id="edit-evo-futgg-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTGG ID">
+                    <input type="text" value="${easysbc_id || ''}" id="edit-evo-easysbc-${id}" style="flex: 1; min-width: 80px;" placeholder="EASYSBC ID">
+                    <button class="btn btn-success" onclick="saveEditEvolutionEntry(${id})">保存</button>
+                    <button class="btn btn-secondary" onclick="renderEvolutionList()">取消</button>
+                </div>
+            `;
+        }
+
+        // 保存编辑进化
+        async function saveEditEvolutionEntry(id) {
+            const entry = currentEvolutions.find(e => e.id === id);
+            if (!entry) return;
+            
+            const key = document.getElementById(`edit-evo-key-${id}`).value.trim();
+            const cn = document.getElementById(`edit-evo-cn-${id}`).value.trim();
+            const source = document.getElementById(`edit-evo-source-${id}`).value.trim();
+            const futbinId = document.getElementById(`edit-evo-futbin-${id}`).value.trim();
+            const futggId = document.getElementById(`edit-evo-futgg-${id}`).value.trim();
+            const easysbcId = document.getElementById(`edit-evo-easysbc-${id}`).value.trim();
+            
+            if (!key) {
+                showMessage('请输入英文名称', 'error');
+                return;
+            }
+            if (!cn) {
+                showMessage('请输入中文翻译', 'error');
+                return;
+            }
+            
+            Object.assign(entry, {
+                key: key,
+                CN: cn,
+                timestamp: Date.now()
+            });
+            
+            if (source) {
+                entry.source = source;
+            } else {
+                delete entry.source;
+            }
+            if (futbinId) {
+                entry.futbin_id = futbinId;
+            } else {
+                delete entry.futbin_id;
+            }
+            if (futggId) {
+                entry.futgg_id = futggId;
+            } else {
+                delete entry.futgg_id;
+            }
+            if (easysbcId) {
+                entry.easysbc_id = easysbcId;
+            } else {
+                delete entry.easysbc_id;
+            }
+            
+            await autoSaveEvolutions();
+            
+            renderEvolutionList();
+            updateEvoStats();
+            showMessage('✅ 进化修改成功！', 'success');
+        }
+
+        // 删除进化
+        async function deleteEvolutionEntry(id) {
+            const entry = currentEvolutions.find(e => e.id === id);
+            if (!entry) return;
+            
+            if (!confirm(`确定要删除进化 "${entry.key}" 吗？`)) return;
+            
+            const index = currentEvolutions.findIndex(e => e.id === id);
+            if (index > -1) {
+                currentEvolutions.splice(index, 1);
+            }
+            await autoSaveEvolutions();
+            
+            renderEvolutionList();
+            updateEvoStats();
+            showMessage('✅ 进化删除成功！', 'success');
         }
 
         // 渲染字典列表
@@ -612,27 +977,13 @@
             const list = document.getElementById('dictionaryList');
             const search = document.getElementById('searchInput').value.toLowerCase();
             
-            let entries = [];
-            let dictionary = {};
-            
-            // 处理进化分类
-            if (currentCategory === 'evolutions') {
-                dictionary = currentEvolutions;
-                entries = Object.entries(currentEvolutions).filter(([k, v]) => {
-                    // 进化数据使用 CN 键
-                    const translation = typeof v === 'object' && v.CN ? v.CN : v;
-                    const text = `${k} ${translation}`.toLowerCase();
-                    return text.includes(search);
-                });
-            } else {
-                // 处理其他分类
-                dictionary = currentDictionaries[currentCategory] || {};
-                entries = Object.entries(dictionary).filter(([k, v]) => {
-                    const translation = typeof v === 'object' && v.webpagedata ? v.webpagedata : v;
-                    const text = `${k} ${translation} ${(typeof v === 'object' && v.shorten) || ''}`.toLowerCase();
-                    return text.includes(search);
-                });
-            }
+            // 处理字典分类
+            const dictionary = currentDictionaries[currentCategory] || {};
+            const entries = Object.entries(dictionary).filter(([k, v]) => {
+                const translation = typeof v === 'object' && v.webpagedata ? v.webpagedata : v;
+                const text = `${k} ${translation} ${(typeof v === 'object' && v.shorten) || ''}`.toLowerCase();
+                return text.includes(search);
+            });
 
             // 按添加时间排序（新到旧）
             entries.sort((a, b) => {
@@ -647,16 +998,8 @@
             }
 
             list.innerHTML = entries.map(([key, value]) => {
-                // 确保正确处理值
-                let translation, shorten;
-                if (currentCategory === 'evolutions') {
-                    // 进化数据使用 CN 键
-                    translation = typeof value === 'object' && value.CN ? value.CN : value;
-                    shorten = ''; // 进化数据没有 shorten
-                } else {
-                    translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
-                    shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
-                }
+                const translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
+                const shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
                 
                 return `
                 <div class="dictionary-item" data-key="${key}">
@@ -667,8 +1010,8 @@
                         ${shorten ? `<span class="dictionary-shorten">[${shorten}]</span>` : ''}
                     </div>
                     <div class="actions">
-                        <button class="btn btn-secondary" onclick="${currentCategory === 'evolutions' ? 'editEvolution' : 'editEntry'}('${key}')">编辑</button>
-                        <button class="btn btn-danger" onclick="${currentCategory === 'evolutions' ? 'deleteEvolution' : 'deleteEntry'}('${key}')">删除</button>
+                        <button class="btn btn-secondary" onclick="editEntry('${key}')">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteEntry('${key}')">删除</button>
                     </div>
                 </div>
                 `;
@@ -691,26 +1034,15 @@
             
             const timestamp = Date.now(); // 添加时间戳
             
-            if (category === 'evolutions') {
-                // 添加到进化数据 - 使用 CN 键
-                currentEvolutions[key] = {
-                    CN: value,
-                    timestamp: timestamp
-                };
-                
-                // 自动保存进化
-                await autoSaveEvolutions();
-            } else {
-                // 添加到字典数据
-                currentDictionaries[category][key] = {
-                    webpagedata: value,
-                    ...(shorten && { shorten }),
-                    timestamp: timestamp
-                };
-                
-                // 自动保存字典
-                await autoSaveDictionaries();
-            }
+            // 添加到字典数据
+            currentDictionaries[category][key] = {
+                webpagedata: value,
+                ...(shorten && { shorten }),
+                timestamp: timestamp
+            };
+            
+            // 自动保存字典
+            await autoSaveDictionaries();
             
             // 清空表单
             document.getElementById('newKey').value = '';
@@ -727,24 +1059,10 @@
         // 编辑条目
         function editEntry(key) {
             const item = document.querySelector(`#dictionaryList .dictionary-item[data-key="${key}"]`);
-            let value;
+            const value = currentDictionaries[currentCategory][key];
             
-            if (currentCategory === 'evolutions') {
-                value = currentEvolutions[key];
-            } else {
-                value = currentDictionaries[currentCategory][key];
-            }
-            
-            // 确保正确处理值
-            let translation, shorten;
-            if (currentCategory === 'evolutions') {
-                // 进化数据使用 CN 键
-                translation = typeof value === 'object' && value.CN ? value.CN : value;
-                shorten = ''; // 进化数据没有 shorten
-            } else {
-                translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
-                shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
-            }
+            const translation = typeof value === 'object' && value.webpagedata ? value.webpagedata : value;
+            const shorten = typeof value === 'object' && value.shorten ? value.shorten : '';
             
             item.innerHTML = `
                 <div class="edit-form" style="width: 100%;">
@@ -755,11 +1073,6 @@
                     <button class="btn btn-secondary" onclick="renderDictionaryList()">取消</button>
                 </div>
             `;
-        }
-
-        // 编辑进化（保持兼容性）
-        function editEvolution(key) {
-            editEntry(key);
         }
 
         // 保存编辑
@@ -774,61 +1087,33 @@
             
             const timestamp = Date.now(); // 更新时间戳
             
-            if (currentCategory === 'evolutions') {
-                // 编辑进化数据 - 使用 CN 键
-                currentEvolutions[oldKey] = {
-                    CN: value,
-                    timestamp: timestamp
-                };
-                
-                // 自动保存进化
-                await autoSaveEvolutions();
-            } else {
-                // 编辑字典数据
-                currentDictionaries[currentCategory][oldKey] = {
-                    webpagedata: value,
-                    ...(shorten && { shorten }),
-                    timestamp: timestamp
-                };
-                
-                // 自动保存字典
-                await autoSaveDictionaries();
-            }
+            // 编辑字典数据
+            currentDictionaries[currentCategory][oldKey] = {
+                webpagedata: value,
+                ...(shorten && { shorten }),
+                timestamp: timestamp
+            };
+            
+            // 自动保存字典
+            await autoSaveDictionaries();
             
             renderDictionaryList();
             updateStats();
             showMessage('✅ 修改成功！', 'success');
         }
 
-        // 保存编辑进化（保持兼容性）
-        async function saveEditEvolution(oldKey) {
-            await saveEditEntry(oldKey);
-        }
-
         // 删除条目
         async function deleteEntry(key) {
             if (!confirm(`确定要删除 "${key}" 吗？`)) return;
             
-            if (currentCategory === 'evolutions') {
-                // 删除进化数据
-                delete currentEvolutions[key];
-                // 自动保存进化
-                await autoSaveEvolutions();
-            } else {
-                // 删除字典数据
-                delete currentDictionaries[currentCategory][key];
-                // 自动保存字典
-                await autoSaveDictionaries();
-            }
+            // 删除字典数据
+            delete currentDictionaries[currentCategory][key];
+            // 自动保存字典
+            await autoSaveDictionaries();
             
             renderDictionaryList();
             updateStats();
             showMessage('✅ 删除成功！', 'success');
-        }
-
-        // 删除进化（保持兼容性）
-        async function deleteEvolution(key) {
-            await deleteEntry(key);
         }
 
         // 过滤
@@ -839,6 +1124,8 @@
             const saved = localStorage.getItem('giteeToken');
             if (saved) document.getElementById('giteeToken').value = saved;
             evoInit();
+            // 默认显示进化管理模块
+            switchModule('evolution');
         };
         document.getElementById('giteeToken').addEventListener('change', function() {
             localStorage.setItem('giteeToken', this.value);
