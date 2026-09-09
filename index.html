@@ -511,6 +511,7 @@
         let evoSha = '';
         let currentCategory = 'basic';
         let currentModule = 'evolution'; // 当前模块：evolution 或 dictionary
+        let allDataLoaded = false; // 是否已成功加载所有数据，未加载则禁止添加，避免覆盖远程 JSON
 
         const categoryNames = {
             basic: '基础信息',
@@ -688,6 +689,7 @@
                 renderDictionaryList();
                 renderEvolutionList();
                 populateEvoSourceOptions();
+                allDataLoaded = true;
                 showMessage('✅ 所有数据加载成功！', 'success');
             } catch (error) {
                 console.error('加载错误:', error);
@@ -859,6 +861,10 @@
         }
 
         async function addEvolution() {
+            if (!allDataLoaded) {
+                showMessage('添加失败：请先点击「加载所有数据」', 'error');
+                return;
+            }
             const key = document.getElementById('newEvoKey').value.trim();
             const cn = document.getElementById('newEvoCN').value.trim();
             const source = document.getElementById('newEvoSource').value.trim();
@@ -1044,7 +1050,11 @@
 
 
         // 添加条目
-        async function addEntry() {
+        async         function addEntry() {
+            if (!allDataLoaded) {
+                showMessage('添加失败：请先点击「加载所有数据」', 'error');
+                return;
+            }
             const key = document.getElementById('newKey').value.trim();
             const value = document.getElementById('newValue').value.trim();
             let shorten = document.getElementById('newShorten').value.trim();
