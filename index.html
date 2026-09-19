@@ -535,7 +535,7 @@
                     </div>
                     <div class="form-group">
                         <label>来源 (可选)</label>
-                        <input type="text" id="newEvoSource" placeholder="例如：日本任务">
+                        <input type="text" id="newEvoSource" list="evoSourceList" placeholder="选择或输入来源">
                     </div>
                     <button class="btn btn-success" onclick="addEvolution()">添加</button>
                 </div>
@@ -554,6 +554,17 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 来源下拉建议选项（可直接选，也可自由输入/修改） -->
+            <datalist id="evoSourceList">
+                <option value="进化"></option>
+                <option value="路线"></option>
+                <option value="通行证"></option>
+                <option value="高级通行证"></option>
+                <option value="训练营"></option>
+                <option value="代币兑换"></option>
+                <option value="任务"></option>
+            </datalist>
 
             <!-- 进化搜索框 -->
             <div class="search-box">
@@ -650,6 +661,10 @@
 
             // 重新渲染字典列表
             renderDictionaryList();
+
+            // 同步“添加条目”的分类下拉为当前页签
+            const sel = document.getElementById('newCategory');
+            if (sel) sel.value = category;
         }
 
         function showMessage(text, type = 'info') {
@@ -800,6 +815,11 @@
                 switchModule('evolution');
                 updateStats();
                 updateEvoStats();
+                // 动态渲染分类页签与“添加条目”下拉（支持数据文件中的自定义分类）
+                renderCategoryTabs();
+                renderCategorySelect();
+                renderMiniAppTabs();
+                renderMiniAppCategorySelect();
                 renderDictionaryList();
                 renderEvolutionList();
                 updateMiniAppStats();
@@ -922,15 +942,15 @@
         // 更新统计
         function updateStats() {
             const container = document.getElementById('statsContainer');
+            if (!container) return;
             container.innerHTML = '';
-            
-            Object.keys(categoryNames).forEach(category => {
-                if (category === 'evolutions') return; // 进化有独立统计
+
+            getBuiltInCategories().forEach(category => {
                 let count = Object.keys(currentDictionaries[category] || {}).length;
-                
+
                 const item = document.createElement('div');
                 item.className = 'stat-item';
-                item.innerHTML = `<div class="stat-value">${count}</div><div class="stat-label">${categoryNames[category]}</div>`;
+                item.innerHTML = `<div class="stat-value">${count}</div><div class="stat-label">${categoryNames[category] || category}</div>`;
                 container.appendChild(item);
             });
         }
@@ -1049,7 +1069,7 @@
                 <div class="edit-form" style="width: 100%; flex-wrap: wrap;">
                     <input type="text" value="${key}" id="edit-evo-key-${id}" style="flex: 1; min-width: 150px;" placeholder="英文名称">
                     <input type="text" value="${CN}" id="edit-evo-cn-${id}" style="flex: 2; min-width: 150px;" placeholder="中文翻译">
-                    <input type="text" value="${source || ''}" id="edit-evo-source-${id}" style="flex: 1; min-width: 100px;" placeholder="来源">
+                    <input type="text" value="${source || ''}" id="edit-evo-source-${id}" list="evoSourceList" style="flex: 1; min-width: 100px;" placeholder="选择或输入来源">
                     <input type="text" value="${futbin_id || ''}" id="edit-evo-futbin-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTBIN ID">
                     <input type="text" value="${futgg_id || ''}" id="edit-evo-futgg-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTGG ID">
                     <input type="text" value="${easysbc_id || ''}" id="edit-evo-easysbc-${id}" style="flex: 1; min-width: 80px;" placeholder="EASYSBC ID">
@@ -1288,6 +1308,10 @@
                 tab.classList.toggle('active', tab.dataset.category === category);
             });
             renderMiniAppDictList();
+
+            // 同步“添加条目”的分类下拉为当前页签
+            const sel = document.getElementById('miniAppNewCategory');
+            if (sel) sel.value = category;
         }
 
         // 更新小程序字典统计
@@ -1295,13 +1319,79 @@
             const container = document.getElementById('miniAppStatsContainer');
             if (!container) return;
             container.innerHTML = '';
-            Object.keys(miniAppCategoryNames).forEach(category => {
+            getMiniAppCategories().forEach(category => {
                 const count = Object.keys(currentMiniAppDict[category] || {}).length;
                 const item = document.createElement('div');
                 item.className = 'stat-item';
-                item.innerHTML = `<div class="stat-value">${count}</div><div class="stat-label">${miniAppCategoryNames[category]}</div>`;
+                item.innerHTML = `<div class="stat-value">${count}</div><div class="stat-label">${miniAppCategoryNames[category] || category}</div>`;
                 container.appendChild(item);
             });
+        }
+
+        // ===== 动态分类（从数据文件实际分类键生成，支持自定义分类） =====
+
+        // 内置字典：取当前所有分类（标准分类在前，自定义在后，排除 evolutions）
+        function getBuiltInCategories() {
+            const std = Object.keys(categoryNames).filter(c => c !== 'evolutions');
+            const extra = Object.keys(currentDictionaries).filter(c => c !== 'evolutions' && !std.includes(c));
+            return [...std.filter(c => currentDictionaries[c] !== undefined), ...extra];
+        }
+
+        // 小程序字典：取当前所有分类（标准分类在前，自定义在后）
+        function getMiniAppCategories() {
+            const std = Object.keys(miniAppCategoryNames);
+            const extra = Object.keys(currentMiniAppDict).filter(c => !std.includes(c));
+            return [...std.filter(c => currentMiniAppDict[c] !== undefined), ...extra];
+        }
+
+        // 动态渲染内置字典分类页签
+        function renderCategoryTabs() {
+            const container = document.getElementById('categoryTabs');
+            if (!container) return;
+            const cats = getBuiltInCategories();
+            container.innerHTML = cats.map(cat => {
+                const name = categoryNames[cat] || cat;
+                const active = cat === currentCategory ? ' active' : '';
+                return `<button class="tab${active}" data-category="${cat}" onclick="switchTab('${cat}')">${name}</button>`;
+            }).join('');
+        }
+
+        // 动态渲染内置字典“添加条目”分类下拉
+        function renderCategorySelect() {
+            const sel = document.getElementById('newCategory');
+            if (!sel) return;
+            const cats = getBuiltInCategories();
+            sel.innerHTML = cats.map(cat => {
+                const name = categoryNames[cat] || cat;
+                return `<option value="${cat}">${name}</option>`;
+            }).join('');
+            if (!cats.includes(currentCategory) && cats.length) currentCategory = cats[0];
+            sel.value = currentCategory;
+        }
+
+        // 动态渲染小程序字典分类页签
+        function renderMiniAppTabs() {
+            const container = document.getElementById('miniAppCategoryTabs');
+            if (!container) return;
+            const cats = getMiniAppCategories();
+            container.innerHTML = cats.map(cat => {
+                const name = miniAppCategoryNames[cat] || cat;
+                const active = cat === miniAppCategory ? ' active' : '';
+                return `<button class="tab${active}" data-category="${cat}" onclick="switchMiniAppTab('${cat}')">${name}</button>`;
+            }).join('');
+        }
+
+        // 动态渲染小程序字典“添加条目”分类下拉
+        function renderMiniAppCategorySelect() {
+            const sel = document.getElementById('miniAppNewCategory');
+            if (!sel) return;
+            const cats = getMiniAppCategories();
+            sel.innerHTML = cats.map(cat => {
+                const name = miniAppCategoryNames[cat] || cat;
+                return `<option value="${cat}">${name}</option>`;
+            }).join('');
+            if (!cats.includes(miniAppCategory) && cats.length) miniAppCategory = cats[0];
+            sel.value = miniAppCategory;
         }
 
         // 渲染小程序字典列表
