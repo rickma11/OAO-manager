@@ -301,6 +301,29 @@
             .actions { width: 100%; justify-content: flex-end; }
             .module-tab { padding: 12px 16px; font-size: 0.9rem; }
         }
+
+        /* 进化「来源」自定义下拉（替代原生 datalist，避免手机端全屏弹层遮挡编辑区） */
+        .evo-source-wrap { position: relative; width: 100%; }
+        .evo-source-wrap input { width: 100%; padding-right: 30px; }
+        .evo-source-toggle {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            border: none; background: transparent; cursor: pointer;
+            font-size: 14px; color: #999; padding: 4px 6px; line-height: 1;
+        }
+        .evo-source-toggle:focus { outline: none; color: #7c3aed; }
+        .evo-source-pop {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            max-height: 220px; overflow-y: auto; z-index: 60;
+            background: #fff; border: 1px solid #e2e2e2; border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(0,0,0,.14); display: none;
+        }
+        .evo-source-pop.open { display: block; }
+        .evo-source-pop .opt {
+            padding: 9px 12px; cursor: pointer; font-size: 14px;
+            border-bottom: 1px solid #f2f2f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .evo-source-pop .opt:last-child { border-bottom: none; }
+        .evo-source-pop .opt:hover, .evo-source-pop .opt.active { background: #f3edff; color: #5b21b6; }
     </style>
 </head>
 <body>
@@ -535,7 +558,11 @@
                     </div>
                     <div class="form-group">
                         <label>来源 (可选)</label>
-                        <input type="text" id="newEvoSource" list="evoSourceList" placeholder="选择或输入来源">
+                        <div class="evo-source-wrap">
+                            <input type="text" id="newEvoSource" placeholder="选择或输入来源" autocomplete="off">
+                            <button type="button" class="evo-source-toggle" aria-label="选择来源">▾</button>
+                            <div class="evo-source-pop" id="evoSourcePop"></div>
+                        </div>
                     </div>
                     <button class="btn btn-success" onclick="addEvolution()">添加</button>
                 </div>
@@ -555,18 +582,7 @@
                 </div>
             </div>
 
-            <!-- 来源下拉建议选项（可直接选，也可自由输入/修改） -->
-            <datalist id="evoSourceList">
-                <option value="进化"></option>
-                <option value="路线"></option>
-                <option value="通行证"></option>
-                <option value="高级通行证"></option>
-                <option value="训练营"></option>
-                <option value="代币"></option>
-                <option value="任务"></option>
-                <option value="装饰"></option>
-                <option value="比赛风格实验室"></option>
-            </datalist>
+            <!-- 来源建议改为 JS 自定义下拉（见 EVO_SOURCE_OPTIONS / setupEvoSourceDropdown），移除原生 datalist 以免手机端全屏遮挡 -->
 
             <!-- 进化搜索框 -->
             <div class="search-box">
@@ -597,6 +613,7 @@
         let currentCategory = 'basic';
         let miniAppCategory = 'basic';
         let currentModule = 'evolution'; // 当前模块：evolution / dictionary / miniapp
+        let dataLoaded = false;          // 是否已从 Gitee 成功加载数据；未加载前禁止任何写操作（防止空数据覆盖线上文件）
 
         // 小程序字典分类（仅 基础 / SBC）
         const miniAppCategoryNames = {
@@ -685,6 +702,70 @@
             }
             return token;
         }
+
+        // 写操作前置守卫：未从 Gitee 加载数据前，任何录入/保存都不允许执行，避免空内存覆盖线上文件
+        function requireLoaded() {
+            if (!dataLoaded) {
+                showMessage('⚠️ 请先点击「加载所有数据」从 Gitee 拉取最新文件后再操作，否则会覆盖线上数据', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // 录入区/保存按钮视觉锁定：locked=true 时禁用所有“添加”输入框、“添加”按钮与“手动保存”按钮
+        function setEditorLocked(locked) {
+            const inputIds = [
+                'newKey', 'newValue', 'newShorten', 'newCategory',
+                'miniAppNewKey', 'miniAppNewValue', 'miniAppNewShorten', 'miniAppNewCategory',
+                'newEvoKey', 'newEvoCN', 'newEvoSource', 'newEvoFutbinId', 'newEvoFutggId', 'newEvoEasysbcId'
+            ];
+            inputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = locked;
+            });
+            document.querySelectorAll(
+                'button[onclick*="addEntry"],button[onclick*="saveDictionaries"],' +
+                'button[onclick*="addEvolution"],button[onclick*="saveEvolutions"],' +
+                'button[onclick*="addMiniAppEntry"],button[onclick*="saveMiniAppDict"]'
+            ).forEach(b => { b.disabled = locked; });
+            document.querySelectorAll('.evo-source-toggle').forEach(b => { b.disabled = locked; });
+        }
+
+        // 进化「来源」候选（原为原生 datalist，已改为自定义下拉避免手机端全屏遮挡）
+        const EVO_SOURCE_OPTIONS = [
+            '进化', '路线', '通行证', '高级通行证', '训练营',
+            '代币', '任务', '装饰', '比赛风格实验室'
+        ];
+
+        // 为来源输入框挂载自定义下拉：可点选也可自由输入；弹层只在字段下方一小条，不遮挡编辑区
+        function setupEvoSourceDropdown(input, pop) {
+            if (!input || !pop) return;
+            pop.innerHTML = '';
+            EVO_SOURCE_OPTIONS.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'opt';
+                div.textContent = opt;
+                div.addEventListener('click', () => {
+                    input.value = opt;
+                    pop.classList.remove('open');
+                });
+                pop.appendChild(div);
+            });
+            input.addEventListener('focus', () => pop.classList.add('open'));
+            const btn = input.parentElement.querySelector('.evo-source-toggle');
+            if (btn) btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                input.focus();
+                pop.classList.toggle('open');
+            });
+        }
+
+        // 点击来源下拉之外的区域统一收起所有来源弹层
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.evo-source-wrap')) {
+                document.querySelectorAll('.evo-source-pop.open').forEach(p => p.classList.remove('open'));
+            }
+        });
 
         // 解码 Base64
         function decodeBase64(base64) {
@@ -826,6 +907,8 @@
                 renderEvolutionList();
                 updateMiniAppStats();
                 renderMiniAppDictList();
+                dataLoaded = true;          // 解锁录入/保存
+                setEditorLocked(false);     // 启用输入框与按钮
                 showMessage('✅ 所有数据加载成功！', 'success');
             } catch (error) {
                 console.error('加载错误:', error);
@@ -835,6 +918,7 @@
 
         // 保存字典
         async function saveDictionaries() {
+            if (!requireLoaded()) return;
             const token = getToken();
             if (!token) return;
 
@@ -859,6 +943,7 @@
 
         // 保存进化数据
         async function saveEvolutions() {
+            if (!requireLoaded()) return;
             const token = getToken();
             if (!token) return;
 
@@ -894,18 +979,21 @@
 
         // 自动保存字典
         async function autoSaveDictionaries() {
+            if (!requireLoaded()) return;
             if (!document.getElementById('autoSave').checked) return;
             await saveDictionaries();
         }
 
         // 自动保存进化
         async function autoSaveEvolutions() {
+            if (!requireLoaded()) return;
             if (!document.getElementById('autoSaveEvo').checked) return;
             await saveEvolutions();
         }
 
         // 保存小程序字典
         async function saveMiniAppDict() {
+            if (!requireLoaded()) return;
             const token = getToken();
             if (!token) return;
 
@@ -937,6 +1025,7 @@
 
         // 自动保存小程序字典
         async function autoSaveMiniAppDict() {
+            if (!requireLoaded()) return;
             if (!document.getElementById('autoSaveMiniApp').checked) return;
             await saveMiniAppDict();
         }
@@ -1019,6 +1108,7 @@
 
         // 添加进化
         async function addEvolution() {
+            if (!requireLoaded()) return;
             const key = document.getElementById('newEvoKey').value.trim();
             const cn = document.getElementById('newEvoCN').value.trim();
             const source = document.getElementById('newEvoSource').value.trim();
@@ -1071,7 +1161,11 @@
                 <div class="edit-form" style="width: 100%; flex-wrap: wrap;">
                     <input type="text" value="${key}" id="edit-evo-key-${id}" style="flex: 1; min-width: 150px;" placeholder="英文名称">
                     <input type="text" value="${CN}" id="edit-evo-cn-${id}" style="flex: 2; min-width: 150px;" placeholder="中文翻译">
-                    <input type="text" value="${source || ''}" id="edit-evo-source-${id}" list="evoSourceList" style="flex: 1; min-width: 100px;" placeholder="选择或输入来源">
+                    <div class="evo-source-wrap" style="flex: 1; min-width: 100px;">
+                        <input type="text" value="${source || ''}" id="edit-evo-source-${id}" style="flex: 1; min-width: 0;" placeholder="选择或输入来源" autocomplete="off">
+                        <button type="button" class="evo-source-toggle" aria-label="选择来源">▾</button>
+                        <div class="evo-source-pop" id="evoSourcePop-${id}"></div>
+                    </div>
                     <input type="text" value="${futbin_id || ''}" id="edit-evo-futbin-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTBIN ID">
                     <input type="text" value="${futgg_id || ''}" id="edit-evo-futgg-${id}" style="flex: 1; min-width: 80px;" placeholder="FUTGG ID">
                     <input type="text" value="${easysbc_id || ''}" id="edit-evo-easysbc-${id}" style="flex: 1; min-width: 80px;" placeholder="EASYSBC ID">
@@ -1079,10 +1173,15 @@
                     <button class="btn btn-secondary" onclick="renderEvolutionList()">取消</button>
                 </div>
             `;
+            setupEvoSourceDropdown(
+                document.getElementById('edit-evo-source-' + id),
+                document.getElementById('evoSourcePop-' + id)
+            );
         }
 
         // 保存编辑进化
         async function saveEditEvolutionEntry(id) {
+            if (!requireLoaded()) return;
             const entry = currentEvolutions.find(e => e.id === id);
             if (!entry) return;
             
@@ -1138,6 +1237,7 @@
 
         // 删除进化
         async function deleteEvolutionEntry(id) {
+            if (!requireLoaded()) return;
             const entry = currentEvolutions.find(e => e.id === id);
             if (!entry) return;
             
@@ -1204,6 +1304,7 @@
 
         // 添加条目
         async function addEntry() {
+            if (!requireLoaded()) return;
             const key = document.getElementById('newKey').value.trim();
             const value = document.getElementById('newValue').value.trim();
             const shorten = document.getElementById('newShorten').value.trim();
@@ -1259,6 +1360,7 @@
 
         // 保存编辑
         async function saveEditEntry(oldKey) {
+            if (!requireLoaded()) return;
             const value = document.getElementById(`edit-value-${oldKey}`).value.trim();
             const shorten = document.getElementById(`edit-shorten-${oldKey}`).value.trim();
             
@@ -1286,6 +1388,7 @@
 
         // 删除条目
         async function deleteEntry(key) {
+            if (!requireLoaded()) return;
             if (!confirm(`确定要删除 "${key}" 吗？`)) return;
             
             // 删除字典数据
@@ -1443,6 +1546,7 @@
 
         // 添加小程序字典条目
         async function addMiniAppEntry() {
+            if (!requireLoaded()) return;
             const key = document.getElementById('miniAppNewKey').value.trim();
             const value = document.getElementById('miniAppNewValue').value.trim();
             const shorten = document.getElementById('miniAppNewShorten').value.trim();
@@ -1497,6 +1601,7 @@
 
         // 保存编辑小程序字典条目
         async function saveEditMiniAppEntry(oldKey) {
+            if (!requireLoaded()) return;
             const value = document.getElementById(`edit-mini-value-${oldKey}`).value.trim();
             const shorten = document.getElementById(`edit-mini-shorten-${oldKey}`).value.trim();
 
@@ -1521,6 +1626,7 @@
 
         // 删除小程序字典条目
         async function deleteMiniAppEntry(key) {
+            if (!requireLoaded()) return;
             if (!confirm(`确定要删除 "${key}" 吗？`)) return;
 
             delete currentMiniAppDict[miniAppCategory][key];
@@ -1541,6 +1647,14 @@
             evoInit();
             // 默认显示进化管理模块
             switchModule('evolution');
+            // 初始锁定录入区：必须先「加载所有数据」才能添加/保存，防止空数据覆盖 Gitee
+            dataLoaded = false;
+            setEditorLocked(true);
+            // 初始化进化「来源」自定义下拉（替换原生 datalist，避免手机端全屏遮挡）
+            setupEvoSourceDropdown(
+                document.getElementById('newEvoSource'),
+                document.getElementById('evoSourcePop')
+            );
         };
         document.getElementById('giteeToken').addEventListener('change', function() {
             localStorage.setItem('giteeToken', this.value);
